@@ -1,0 +1,185 @@
+/* Planning, Budgets & Goals Styling */
+.planning-container {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* 50-30-20 Rule Section */
+.rule-50-30-20-card {
+  padding: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.rule-pillars-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.rule-pillar {
+  padding: 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--bg-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pillar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pillar-title {
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pillar-amounts {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.9rem;
+}
+
+.pillar-spent {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.pillar-budget {
+  color: var(--text-secondary);
+}
+
+/* Category Budgets Grid */
+.budgets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.budget-item-card {
+  padding: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: all var(--transition-normal);
+}
+
+.budget-item-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-hover);
+}
+
+.budget-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.budget-cat-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+
+.budget-values {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+}
+
+/* Goals (Metas & Sonhos) */
+.goals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.goal-card {
+  padding: 22px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition-normal);
+}
+
+.goal-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+.goal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.goal-icon-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.goal-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.goal-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.goal-date {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.goal-amounts {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.goal-curr-amount {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.goal-target-amount {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.goal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
