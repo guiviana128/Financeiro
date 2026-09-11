@@ -1,6 +1,5 @@
-# pyrefly: ignore [missing-import]
 from fastapi import FastAPI, Depends
-from fastapi.middleware.cors import CORSM1ddleware
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from app.database import engine, Base, get_db, run_auto_migrations
 from app.routers import (
