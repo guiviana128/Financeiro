@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, CreditCard, Sparkles, Zap, FileText, Smartphone } from "lucide-react";
+import { Plus, Zap, FileText } from "lucide-react";
 import { useFinance } from "../../context/FinanceContext";
 import { CreditCardItem } from "./CreditCardItem";
 import { AddCardModal } from "./AddCardModal";

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Modal } from "../common/Modal";
-import { Zap, Smartphone, Shield, Link2, Copy, Check, Play, Sparkles, AlertCircle, ArrowRight, Lock } from "lucide-react";
+import { Zap, Smartphone, Link2, Copy, Check, Play, AlertCircle, Lock } from "lucide-react";
 import { useFinance } from "../../context/FinanceContext";
 import { api } from "../../services/api";
 import { formatCurrency, maskCPF } from "../../utils/formatters";
@@ -11,20 +11,15 @@ export const BankAutomationModal = ({ isOpen, onClose }) => {
   const [copiedField, setCopiedField] = useState(null);
   
   // Simulator State
-  const [selectedCardId, setSelectedCardId] = useState(creditCards[0]?.id ? String(creditCards[0].id) : "");
+  const [selectedCardId, setSelectedCardId] = useState("");
   const [merchant, setMerchant] = useState("iFood *Restaurante");
   const [amount, setAmount] = useState("45.90");
   const [installments, setInstallments] = useState("1");
   const [isSimulating, setIsSimulating] = useState(false);
   const [simulationResult, setSimulationResult] = useState(null);
 
-  useEffect(() => {
-    if (creditCards.length > 0 && !selectedCardId) {
-      setSelectedCardId(String(creditCards[0].id));
-    }
-  }, [creditCards, selectedCardId]);
-
-  const selectedCard = creditCards.find(c => String(c.id) === String(selectedCardId)) || creditCards[0];
+  const effectiveCardId = selectedCardId || (creditCards[0]?.id ? String(creditCards[0].id) : "");
+  const selectedCard = creditCards.find(c => String(c.id) === String(effectiveCardId)) || creditCards[0];
 
   const handleCopy = (text, fieldKey) => {
     navigator.clipboard.writeText(text);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Modal } from "../common/Modal";
-import { CreditCard, Sparkles, Wifi, RotateCw, Palette, Shield, Check, Zap, Smartphone, Link2, Lock, HelpCircle } from "lucide-react";
-import { formatCurrency, formatCPF, validateCPF, maskCPF } from "../../utils/formatters";
+import { CreditCard, Sparkles, Wifi, RotateCw, Palette, Shield, Check, Zap, Smartphone, Link2, Lock } from "lucide-react";
+import { formatCurrency, formatCPF, validateCPF } from "../../utils/formatters";
 
 const PRESET_CATEGORIES = [
   { id: "all", label: "Todos" },
