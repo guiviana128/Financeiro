@@ -5,10 +5,12 @@ from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from datetime import date
 from app.database import get_db
+from app.models.user import User
 from app.models.transaction import Transaction
 from app.models.credit_card import CreditCard
 from app.schemas.transaction_schema import TransactionCreate, TransactionUpdate, TransactionResponse
 from app.services.finance_service import create_transactions_with_installments, get_competence_month
+from app.services.auth_service import get_current_user
 
 router = APIRouter(prefix="/api/transactions", tags=["Transactions"])
 
@@ -22,12 +24,13 @@ def get_transactions(
     search: Optional[str] = Query(None),
     limit: int = Query(200, le=1000),
     offset: int = Query(0),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     query = db.query(Transaction).options(
         joinedload(Transaction.category),
         joinedload(Transaction.credit_card)
-    )
+    ).filter(Transaction.user_id == current_user.id)
 
     if month:
         query = query.filter(Transaction.competence_month == month)
@@ -45,13 +48,25 @@ def get_transactions(
     return query.order_by(Transaction.date.desc(), Transaction.id.desc()).offset(offset).limit(limit).all()
 
 @router.post("", response_model=List[TransactionResponse])
-def create_transaction(tx_in: TransactionCreate, db: Session = Depends(get_db)):
-    txs = create_transactions_with_installments(db, tx_in)
+def create_transaction(
+    tx_in: TransactionCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    txs = create_transactions_with_installments(db, tx_in, user_id=current_user.id)
     return txs
 
 @router.put("/{tx_id}", response_model=TransactionResponse)
-def update_transaction(tx_id: int, tx_in: TransactionUpdate, db: Session = Depends(get_db)):
-    tx = db.query(Transaction).filter(Transaction.id == tx_id).first()
+def update_transaction(
+    tx_id: int,
+    tx_in: TransactionUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    tx = db.query(Transaction).filter(
+        Transaction.id == tx_id,
+        Transaction.user_id == current_user.id
+    ).first()
     if not tx:
         raise HTTPException(status_code=404, detail="Transação não encontrada.")
     
@@ -63,7 +78,10 @@ def update_transaction(tx_id: int, tx_in: TransactionUpdate, db: Session = Depen
     if "date" in update_data or "credit_card_id" in update_data:
         card = None
         if tx.credit_card_id:
-            card = db.query(CreditCard).filter(CreditCard.id == tx.credit_card_id).first()
+            card = db.query(CreditCard).filter(
+                CreditCard.id == tx.credit_card_id,
+                CreditCard.user_id == current_user.id
+            ).first()
         tx.competence_month = get_competence_month(tx.date, card)
 
     db.commit()
@@ -71,8 +89,15 @@ def update_transaction(tx_id: int, tx_in: TransactionUpdate, db: Session = Depen
     return tx
 
 @router.patch("/{tx_id}/toggle-paid", response_model=TransactionResponse)
-def toggle_paid_status(tx_id: int, db: Session = Depends(get_db)):
-    tx = db.query(Transaction).filter(Transaction.id == tx_id).first()
+def toggle_paid_status(
+    tx_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    tx = db.query(Transaction).filter(
+        Transaction.id == tx_id,
+        Transaction.user_id == current_user.id
+    ).first()
     if not tx:
         raise HTTPException(status_code=404, detail="Transação não encontrada.")
     tx.is_paid = not tx.is_paid
@@ -84,14 +109,21 @@ def toggle_paid_status(tx_id: int, db: Session = Depends(get_db)):
 def delete_transaction(
     tx_id: int,
     delete_all_installments: bool = Query(False),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    tx = db.query(Transaction).filter(Transaction.id == tx_id).first()
+    tx = db.query(Transaction).filter(
+        Transaction.id == tx_id,
+        Transaction.user_id == current_user.id
+    ).first()
     if not tx:
         raise HTTPException(status_code=404, detail="Transação não encontrada.")
     
     if delete_all_installments and tx.installment_group_id:
-        db.query(Transaction).filter(Transaction.installment_group_id == tx.installment_group_id).delete()
+        db.query(Transaction).filter(
+            Transaction.installment_group_id == tx.installment_group_id,
+            Transaction.user_id == current_user.id
+        ).delete()
     else:
         db.delete(tx)
         
@@ -101,12 +133,14 @@ def delete_transaction(
 @router.get("/export/csv")
 def export_transactions_csv(
     month: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     query = db.query(Transaction).options(
         joinedload(Transaction.category),
         joinedload(Transaction.credit_card)
-    )
+    ).filter(Transaction.user_id == current_user.id)
+
     if month:
         query = query.filter(Transaction.competence_month == month)
     
@@ -135,7 +169,7 @@ def export_transactions_csv(
             t.notes or ""
         ])
     
-    content = output.getvalue().encode("utf-8-sig") # BOM for Excel
+    content = output.getvalue().encode("utf-8-sig")
     filename = f"transacoes_{month or 'todas'}.csv"
     return Response(
         content=content,

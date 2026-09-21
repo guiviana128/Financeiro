@@ -87,7 +87,8 @@ export const BankAutomationModal = ({ isOpen, onClose }) => {
     }
   };
 
-  const webhookUrl = "http://localhost:8000/api/open-finance/webhook/purchase";
+  const host = typeof window !== "undefined" && window.location.hostname ? window.location.hostname : "localhost";
+  const webhookUrl = `http://${host}:8000/api/open-finance/webhook/purchase`;
 
   const sampleJson = JSON.stringify({
     bank: selectedCard?.bank || "Nubank",

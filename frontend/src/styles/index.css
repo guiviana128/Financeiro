@@ -7,6 +7,8 @@
 @import './planning.css';
 @import './modal.css';
 @import './calendar.css';
+@import './mobile.css';
+@import './auth.css';
 
 * {
   box-sizing: border-box;

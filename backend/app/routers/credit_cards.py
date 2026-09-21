@@ -3,10 +3,12 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import date
 from app.database import get_db
+from app.models.user import User
 from app.models.credit_card import CreditCard
 from app.models.transaction import Transaction
 from app.schemas.credit_card_schema import CreditCardCreate, CreditCardUpdate, CreditCardResponse
 from app.services.finance_service import calculate_card_metrics
+from app.services.auth_service import get_current_user
 
 router = APIRouter(prefix="/api/credit-cards", tags=["Credit Cards"])
 
@@ -37,12 +39,13 @@ def _card_to_response_dict(card: CreditCard, metrics: dict) -> dict:
 @router.get("", response_model=List[CreditCardResponse])
 def get_credit_cards(
     month: Optional[str] = Query(None, description="Competence month YYYY-MM"),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     if not month:
         month = date.today().strftime("%Y-%m")
 
-    cards = db.query(CreditCard).order_by(CreditCard.id.asc()).all()
+    cards = db.query(CreditCard).filter(CreditCard.user_id == current_user.id).order_by(CreditCard.id.asc()).all()
     results = []
     for card in cards:
         metrics = calculate_card_metrics(db, card, month)
@@ -53,9 +56,13 @@ def get_credit_cards(
 def get_credit_card(
     card_id: int,
     month: Optional[str] = None,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    card = db.query(CreditCard).filter(CreditCard.id == card_id).first()
+    card = db.query(CreditCard).filter(
+        CreditCard.id == card_id,
+        CreditCard.user_id == current_user.id
+    ).first()
     if not card:
         raise HTTPException(status_code=404, detail="Cartão de crédito não encontrado.")
     
@@ -63,8 +70,12 @@ def get_credit_card(
     return CreditCardResponse(**_card_to_response_dict(card, metrics))
 
 @router.post("", response_model=CreditCardResponse)
-def create_credit_card(card_in: CreditCardCreate, db: Session = Depends(get_db)):
-    card = CreditCard(**card_in.model_dump())
+def create_credit_card(
+    card_in: CreditCardCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    card = CreditCard(**card_in.model_dump(), user_id=current_user.id)
     db.add(card)
     db.commit()
     db.refresh(card)
@@ -73,8 +84,16 @@ def create_credit_card(card_in: CreditCardCreate, db: Session = Depends(get_db))
     return CreditCardResponse(**_card_to_response_dict(card, metrics))
 
 @router.put("/{card_id}", response_model=CreditCardResponse)
-def update_credit_card(card_id: int, card_in: CreditCardUpdate, db: Session = Depends(get_db)):
-    card = db.query(CreditCard).filter(CreditCard.id == card_id).first()
+def update_credit_card(
+    card_id: int,
+    card_in: CreditCardUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    card = db.query(CreditCard).filter(
+        CreditCard.id == card_id,
+        CreditCard.user_id == current_user.id
+    ).first()
     if not card:
         raise HTTPException(status_code=404, detail="Cartão não encontrado.")
     
@@ -89,8 +108,15 @@ def update_credit_card(card_id: int, card_in: CreditCardUpdate, db: Session = De
     return CreditCardResponse(**_card_to_response_dict(card, metrics))
 
 @router.delete("/{card_id}")
-def delete_credit_card(card_id: int, db: Session = Depends(get_db)):
-    card = db.query(CreditCard).filter(CreditCard.id == card_id).first()
+def delete_credit_card(
+    card_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    card = db.query(CreditCard).filter(
+        CreditCard.id == card_id,
+        CreditCard.user_id == current_user.id
+    ).first()
     if not card:
         raise HTTPException(status_code=404, detail="Cartão não encontrado.")
     db.delete(card)

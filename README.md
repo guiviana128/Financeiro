@@ -84,21 +84,54 @@ Financeiro/
 
 ---
 
-## 🚀 Como Executar o Projeto
+## 🌐 Configuração de Domínio Local (`finflow.local`)
 
-### Opção 1: Inicialização com 1 Clique (Windows)
-Basta dar um duplo-clique no arquivo `start.bat` na raiz do projeto. Ele iniciará o Backend Python e o Frontend React e abrirá o navegador automaticamente!
+Você pode acessar o sistema usando um domínio amigável **`http://finflow.local:5173`**:
+
+1. **Configuração Automática (1 Clique):**
+   - Execute o arquivo [`configurar_dominio_local.bat`](file:///c:/TEMP/Financeiro/configurar_dominio_local.bat) como Administrador.
+   - Ele adiciona automaticamente as entradas no seu arquivo `hosts` do Windows (`C:\Windows\System32\drivers\etc\hosts`).
+
+2. **Configuração Manual (Opcional):**
+   - Abra o Bloco de Notas como Administrador.
+   - Abra o arquivo `C:\Windows\System32\drivers\etc\hosts`.
+   - Adicione ao final:
+     ```text
+     127.0.0.1 finflow.local
+     127.0.0.1 api.finflow.local
+     ```
+   - Salve o arquivo.
 
 ---
 
-### Opção 2: Inicialização Manual via Terminal
+## 🌐 Domínio Público com HTTPS (Para Celular e Acesso Remoto)
+
+Para gerar uma URL pública com HTTPS acessível de qualquer lugar da internet:
+- Dê um duplo-clique no arquivo [`iniciar_com_dominio_publico.bat`](file:///c:/TEMP/Financeiro/iniciar_com_dominio_publico.bat).
+- Ele iniciará os serviços e gerará um link público seguro (ex: `https://xxxx.loca.lt`) que você pode abrir no seu celular ou enviar para qualquer pessoa.
+
+---
+
+## 🚀 Como Executar o Projeto
+
+### Opção 1: Inicialização com 1 Clique (Local)
+Basta dar um duplo-clique no arquivo [`start.bat`](file:///c:/TEMP/Financeiro/start.bat) na raiz do projeto. Ele iniciará o Backend Python e o Frontend React e abrirá automaticamente em seu navegador padrão.
+
+---
+
+### Opção 2: Inicialização com Domínio Público na Internet
+Dê um duplo-clique em [`iniciar_com_dominio_publico.bat`](file:///c:/TEMP/Financeiro/iniciar_com_dominio_publico.bat).
+
+---
+
+### Opção 3: Inicialização Manual via Terminal
 
 #### 1. Backend (Python):
 ```bash
 # Na pasta raiz do projeto:
 py -3.11 backend/run.py
 ```
-*O Backend estará rodando em `http://localhost:8000` (Documentação Swagger disponível em `http://localhost:8000/docs`).*
+*O Backend estará rodando em `http://localhost:8000` (Swagger em `/docs`).*
 
 #### 2. Frontend (React):
 ```bash

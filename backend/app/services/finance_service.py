@@ -1,6 +1,6 @@
 import uuid
 from datetime import date, datetime, timedelta
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
 from app.models.transaction import Transaction
@@ -21,7 +21,6 @@ def get_competence_month(tx_date: date, credit_card: CreditCard = None) -> str:
     
     closing_day = credit_card.closing_day
     if tx_date.day > closing_day:
-        # Falls in next month
         year = tx_date.year
         month = tx_date.month + 1
         if month > 12:
@@ -36,19 +35,21 @@ def add_months(sourcedate: date, months: int) -> date:
     month = sourcedate.month - 1 + months
     year = sourcedate.year + month // 12
     month = month % 12 + 1
-    # Handle end of month rollover (e.g., Feb 30 -> Feb 28)
     day = min(sourcedate.day, [31,
         29 if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0) else 28,
         31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1])
     return date(year, month, day)
 
-def create_transactions_with_installments(db: Session, tx_in: TransactionCreate) -> List[Transaction]:
+def create_transactions_with_installments(db: Session, tx_in: TransactionCreate, user_id: Optional[int] = None) -> List[Transaction]:
     """
-    Creates one or multiple transactions (if installment).
+    Creates one or multiple transactions (if installment) scoped to a user.
     """
     card = None
     if tx_in.credit_card_id:
-        card = db.query(CreditCard).filter(CreditCard.id == tx_in.credit_card_id).first()
+        card_query = db.query(CreditCard).filter(CreditCard.id == tx_in.credit_card_id)
+        if user_id:
+            card_query = card_query.filter(CreditCard.user_id == user_id)
+        card = card_query.first()
 
     installments = max(1, tx_in.installments_count or 1)
     
@@ -69,21 +70,21 @@ def create_transactions_with_installments(db: Session, tx_in: TransactionCreate)
             installment_group_id=None,
             is_fixed=tx_in.is_fixed,
             is_paid=tx_in.is_paid,
-            notes=tx_in.notes
+            notes=tx_in.notes,
+            user_id=user_id
         )
         db.add(tx)
         db.commit()
         db.refresh(tx)
         return [tx]
     
-    # Handle installments (e.g. 10x)
+    # Handle installments
     total_amount = tx_in.amount if tx_in.amount_is_total else tx_in.amount * installments
     installment_amount = round(total_amount / installments, 2)
     group_id = str(uuid.uuid4())
     
     created = []
     for i in range(1, installments + 1):
-        # Calculate date for i-th installment
         inst_date = add_months(tx_in.date, i - 1)
         comp_month = get_competence_month(inst_date, card)
         
@@ -103,7 +104,8 @@ def create_transactions_with_installments(db: Session, tx_in: TransactionCreate)
             installment_group_id=group_id,
             is_fixed=False,
             is_paid=(i == 1 and tx_in.is_paid),
-            notes=tx_in.notes
+            notes=tx_in.notes,
+            user_id=user_id
         )
         db.add(tx)
         created.append(tx)
@@ -120,21 +122,24 @@ def calculate_card_metrics(db: Session, card: CreditCard, month: str = None) -> 
     if not month:
         month = date.today().strftime("%Y-%m")
         
-    # Sum expenses for this card in this competence month
-    bill = db.query(func.coalesce(func.sum(Transaction.amount), 0.0)).filter(
+    bill_query = db.query(func.coalesce(func.sum(Transaction.amount), 0.0)).filter(
         Transaction.credit_card_id == card.id,
         Transaction.type == "expense",
         Transaction.competence_month == month
-    ).scalar() or 0.0
+    )
+    if card.user_id:
+        bill_query = bill_query.filter(Transaction.user_id == card.user_id)
+    bill = bill_query.scalar() or 0.0
 
-    # Total all unpaid card transactions across all months to know total locked limit
-    total_unpaid = db.query(func.coalesce(func.sum(Transaction.amount), 0.0)).filter(
+    unpaid_query = db.query(func.coalesce(func.sum(Transaction.amount), 0.0)).filter(
         Transaction.credit_card_id == card.id,
         Transaction.type == "expense",
         Transaction.is_paid == False
-    ).scalar() or 0.0
+    )
+    if card.user_id:
+        unpaid_query = unpaid_query.filter(Transaction.user_id == card.user_id)
+    total_unpaid = unpaid_query.scalar() or 0.0
 
-    # If bill is paid, used is total_unpaid, else at least current bill
     used_limit = max(bill, total_unpaid)
     available = max(0.0, card.limit_total - used_limit)
     usage_pct = round((used_limit / card.limit_total * 100) if card.limit_total > 0 else 0, 1)
@@ -154,49 +159,72 @@ def calculate_card_metrics(db: Session, card: CreditCard, month: str = None) -> 
         "status_label": status
     }
 
-def get_dashboard_metrics(db: Session, month: str = None) -> Dict[str, Any]:
+def get_dashboard_metrics(db: Session, month: str = None, user_id: Optional[int] = None) -> Dict[str, Any]:
     if not month:
         month = date.today().strftime("%Y-%m")
     
+    # Helper to apply user filter
+    def apply_user(query, model):
+        if user_id is not None:
+            return query.filter(model.user_id == user_id)
+        return query
+
     # Incomes in month
-    monthly_income = db.query(func.coalesce(func.sum(Transaction.amount), 0.0)).filter(
-        Transaction.type == "income",
-        Transaction.competence_month == month
+    monthly_income = apply_user(
+        db.query(func.coalesce(func.sum(Transaction.amount), 0.0)).filter(
+            Transaction.type == "income",
+            Transaction.competence_month == month
+        ),
+        Transaction
     ).scalar() or 0.0
 
-    # Expenses in month (non-card or all)
-    monthly_expense = db.query(func.coalesce(func.sum(Transaction.amount), 0.0)).filter(
-        Transaction.type == "expense",
-        Transaction.competence_month == month
+    # Expenses in month
+    monthly_expense = apply_user(
+        db.query(func.coalesce(func.sum(Transaction.amount), 0.0)).filter(
+            Transaction.type == "expense",
+            Transaction.competence_month == month
+        ),
+        Transaction
     ).scalar() or 0.0
 
     # Card bill in month
-    card_bill = db.query(func.coalesce(func.sum(Transaction.amount), 0.0)).filter(
-        Transaction.type == "expense",
-        Transaction.credit_card_id != None,
-        Transaction.competence_month == month
+    card_bill = apply_user(
+        db.query(func.coalesce(func.sum(Transaction.amount), 0.0)).filter(
+            Transaction.type == "expense",
+            Transaction.credit_card_id != None,
+            Transaction.competence_month == month
+        ),
+        Transaction
     ).scalar() or 0.0
 
-    # Total balance = all lifetime incomes - all lifetime expenses
-    all_income = db.query(func.coalesce(func.sum(Transaction.amount), 0.0)).filter(
-        Transaction.type == "income"
+    # Lifetime balance
+    all_income = apply_user(
+        db.query(func.coalesce(func.sum(Transaction.amount), 0.0)).filter(
+            Transaction.type == "income"
+        ),
+        Transaction
     ).scalar() or 0.0
-    all_expense = db.query(func.coalesce(func.sum(Transaction.amount), 0.0)).filter(
-        Transaction.type == "expense"
+
+    all_expense = apply_user(
+        db.query(func.coalesce(func.sum(Transaction.amount), 0.0)).filter(
+            Transaction.type == "expense"
+        ),
+        Transaction
     ).scalar() or 0.0
+
     total_balance = all_income - all_expense
-
     net_savings = monthly_income - monthly_expense
     savings_rate = round((net_savings / monthly_income * 100) if monthly_income > 0 else 0, 1)
     if savings_rate < 0:
         savings_rate = 0.0
 
-    # Health Score Calculation (0 to 100)
-    # 1. Savings rate (40 pts): > 20% = 40 pts
+    # Health Score
     score_savings = min(40, (savings_rate / 20.0) * 40)
     
-    # 2. Credit Card usage (30 pts): < 30% limit = 30 pts, > 80% limit = 5 pts
-    cards = db.query(CreditCard).filter(CreditCard.is_active == True).all()
+    cards_query = db.query(CreditCard).filter(CreditCard.is_active == True)
+    cards_query = apply_user(cards_query, CreditCard)
+    cards = cards_query.all()
+
     total_limit = sum(c.limit_total for c in cards)
     total_used = sum(calculate_card_metrics(db, c, month)["current_bill"] for c in cards)
     card_ratio = (total_used / total_limit) if total_limit > 0 else 0
@@ -209,7 +237,6 @@ def get_dashboard_metrics(db: Session, month: str = None) -> Dict[str, Any]:
     else:
         score_cards = 5
 
-    # 3. Budget & Deficit (30 pts): No deficit = 30 pts
     score_budget = 30 if net_savings >= 0 else max(0, 30 + int(net_savings / (monthly_income or 1000) * 30))
 
     health_score = int(score_savings + score_cards + score_budget)
@@ -240,9 +267,13 @@ def get_dashboard_metrics(db: Session, month: str = None) -> Dict[str, Any]:
         Category.icon,
         func.sum(Transaction.amount).label("total")
     ).join(Transaction, Transaction.category_id == Category.id)\
-     .filter(Transaction.type == "expense", Transaction.competence_month == month)\
-     .group_by(Category.id)\
-     .order_by(func.sum(Transaction.amount).desc()).all()
+     .filter(Transaction.type == "expense", Transaction.competence_month == month)
+    
+    if user_id is not None:
+        cat_query = cat_query.filter(Transaction.user_id == user_id)
+        
+    cat_results = cat_query.group_by(Category.name, Category.color, Category.icon)\
+                           .order_by(func.sum(Transaction.amount).desc()).all()
 
     expenses_by_category = [
         {
@@ -252,7 +283,7 @@ def get_dashboard_metrics(db: Session, month: str = None) -> Dict[str, Any]:
             "amount": round(row[3], 2),
             "percentage": round((row[3] / monthly_expense * 100) if monthly_expense > 0 else 0, 1)
         }
-        for row in cat_query
+        for row in cat_results
     ]
 
     # 6-Month Cashflow History
@@ -264,20 +295,29 @@ def get_dashboard_metrics(db: Session, month: str = None) -> Dict[str, Any]:
         past_m = past_dt.strftime("%Y-%m")
         month_label = f"{pt_months[past_dt.month - 1]}/{str(past_dt.year)[-2:]}"
         
-        inc = db.query(func.coalesce(func.sum(Transaction.amount), 0.0)).filter(
-            Transaction.type == "income",
-            Transaction.competence_month == past_m
+        inc = apply_user(
+            db.query(func.coalesce(func.sum(Transaction.amount), 0.0)).filter(
+                Transaction.type == "income",
+                Transaction.competence_month == past_m
+            ),
+            Transaction
         ).scalar() or 0.0
 
-        exp = db.query(func.coalesce(func.sum(Transaction.amount), 0.0)).filter(
-            Transaction.type == "expense",
-            Transaction.competence_month == past_m
+        exp = apply_user(
+            db.query(func.coalesce(func.sum(Transaction.amount), 0.0)).filter(
+                Transaction.type == "expense",
+                Transaction.competence_month == past_m
+            ),
+            Transaction
         ).scalar() or 0.0
 
-        card_exp = db.query(func.coalesce(func.sum(Transaction.amount), 0.0)).filter(
-            Transaction.type == "expense",
-            Transaction.credit_card_id != None,
-            Transaction.competence_month == past_m
+        card_exp = apply_user(
+            db.query(func.coalesce(func.sum(Transaction.amount), 0.0)).filter(
+                Transaction.type == "expense",
+                Transaction.credit_card_id != None,
+                Transaction.competence_month == past_m
+            ),
+            Transaction
         ).scalar() or 0.0
 
         cashflow_history.append({
@@ -289,7 +329,7 @@ def get_dashboard_metrics(db: Session, month: str = None) -> Dict[str, Any]:
             "savings": round(inc - exp, 2)
         })
 
-    # Upcoming bills (Credit cards due dates + upcoming pending transactions)
+    # Upcoming bills
     upcoming_bills = []
     for card in cards:
         card_m = calculate_card_metrics(db, card, month)
@@ -321,22 +361,28 @@ def get_dashboard_metrics(db: Session, month: str = None) -> Dict[str, Any]:
         "total_credit_used": round(total_used, 2)
     }
 
-def get_50_30_20_rule(db: Session, month: str = None) -> Dict[str, Any]:
+def get_50_30_20_rule(db: Session, month: str = None, user_id: Optional[int] = None) -> Dict[str, Any]:
     if not month:
         month = date.today().strftime("%Y-%m")
 
-    income = db.query(func.coalesce(func.sum(Transaction.amount), 0.0)).filter(
+    income_query = db.query(func.coalesce(func.sum(Transaction.amount), 0.0)).filter(
         Transaction.type == "income",
         Transaction.competence_month == month
-    ).scalar() or 0.0
+    )
+    if user_id is not None:
+        income_query = income_query.filter(Transaction.user_id == user_id)
+    income = income_query.scalar() or 0.0
 
-    # Group expenses by category budget_type (needs, wants, savings)
-    expenses = db.query(
+    expenses_query = db.query(
         Category.budget_type,
         func.coalesce(func.sum(Transaction.amount), 0.0)
     ).join(Transaction, Transaction.category_id == Category.id)\
-     .filter(Transaction.type == "expense", Transaction.competence_month == month)\
-     .group_by(Category.budget_type).all()
+     .filter(Transaction.type == "expense", Transaction.competence_month == month)
+    
+    if user_id is not None:
+        expenses_query = expenses_query.filter(Transaction.user_id == user_id)
+
+    expenses = expenses_query.group_by(Category.budget_type).all()
 
     spent_map = {row[0]: row[1] for row in expenses}
     

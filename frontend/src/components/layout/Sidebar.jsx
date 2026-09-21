@@ -9,12 +9,16 @@ import {
   Sparkles,
   Wallet,
   RefreshCw,
-  TrendingUp
+  TrendingUp,
+  LogOut,
+  UserCheck
 } from "lucide-react";
 import { useFinance } from "../../context/FinanceContext";
+import { useAuth } from "../../context/AuthContext";
 
 export const Sidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }) => {
   const { handleResetDemo } = useFinance();
+  const { user, logout } = useAuth();
 
   const navItems = [
     { id: "dashboard", label: "Dashboard Geral", icon: LayoutDashboard },
@@ -63,10 +67,37 @@ export const Sidebar = ({ activeTab, setActiveTab, isOpen, setIsOpen }) => {
         </ul>
       </div>
 
-      {/* Bottom section */}
+      {/* Bottom section with Logged In User Card */}
       <div className="sidebar-bottom">
+        {user && (
+          <div className="sidebar-user-card" title={`Conectado como ${user.name} (${user.email})`}>
+            <div className="sidebar-user-info">
+              <div className="user-avatar-circle" style={{ width: 30, height: 30 }}>
+                {user.name ? user.name.charAt(0).toUpperCase() : "U"}
+              </div>
+              <div className="sidebar-user-text">
+                <span className="sidebar-user-name">{user.name}</span>
+                <span className="sidebar-user-role">
+                  <UserCheck size={11} />
+                  <span>Conta Pessoal</span>
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="sidebar-logout-btn"
+              onClick={logout}
+              title="Sair da Conta"
+              aria-label="Sair da Conta"
+            >
+              <LogOut size={16} />
+            </button>
+          </div>
+        )}
+
         <button
           className="nav-link-btn"
+          style={{ marginTop: 8 }}
           onClick={() => {
             if (window.confirm("Deseja restaurar os dados de demonstração padrão?")) {
               handleResetDemo();

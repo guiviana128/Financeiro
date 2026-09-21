@@ -27,6 +27,8 @@ class Transaction(Base):
     is_paid = Column(Boolean, default=True)
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
 
     category = relationship("Category", back_populates="transactions")
     credit_card = relationship("CreditCard", back_populates="transactions")
+    user = relationship("User", back_populates="transactions")

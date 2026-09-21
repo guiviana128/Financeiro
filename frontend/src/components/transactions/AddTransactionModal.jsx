@@ -3,10 +3,14 @@ import { Modal } from "../common/Modal";
 import { useFinance } from "../../context/FinanceContext";
 import { formatCurrency, PAYMENT_METHODS, getTodayDate } from "../../utils/formatters";
 import { CustomDatePicker } from "../common/CustomDatePicker";
-import { ArrowDownRight, ArrowUpRight, Layers, AlertCircle } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Layers, AlertCircle, Plus, X, Tag, PawPrint, Check } from "lucide-react";
+import { Icon } from "../common/Icon";
+
+const QUICK_CATEGORY_ICONS = ["PawPrint", "Dog", "Cat", "HeartPulse", "ShoppingCart", "ShoppingBag", "Utensils", "Sparkles", "Car", "Home", "Tv", "Plane", "Tag"];
+const QUICK_CATEGORY_COLORS = ["#f97316", "#ef4444", "#ec4899", "#d946ef", "#8b5cf6", "#6366f1", "#3b82f6", "#10b981", "#14b8a6", "#f59e0b"];
 
 export const AddTransactionModal = ({ isOpen, onClose }) => {
-  const { categories, creditCards, addTransaction } = useFinance();
+  const { categories, creditCards, addTransaction, createCategory } = useFinance();
 
   const [type, setType] = useState("expense"); // "expense" | "income"
   const [description, setDescription] = useState("");
@@ -21,9 +25,18 @@ export const AddTransactionModal = ({ isOpen, onClose }) => {
   const [isPaid, setIsPaid] = useState(true);
   const [notes, setNotes] = useState("");
 
+  // Quick category creation state
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+  const [newCatIcon, setNewCatIcon] = useState("PawPrint");
+  const [newCatColor, setNewCatColor] = useState("#f97316");
+  const [newCatBudgetType, setNewCatBudgetType] = useState("needs");
+
   useEffect(() => {
     if (isOpen) {
       setTxDate(getTodayDate());
+      setIsCreatingCategory(false);
+      setNewCatName("");
     }
   }, [isOpen]);
 
@@ -31,10 +44,33 @@ export const AddTransactionModal = ({ isOpen, onClose }) => {
     (c) => c.type === type || c.type === "both"
   );
 
-  const selectedCat = categoryId || (filteredCategories[0]?.id || "");
+  const selectedCat = categoryId || (filteredCategories[0]?.id ? String(filteredCategories[0].id) : "");
   const effectiveCardId = creditCardId || (creditCards.length > 0 ? String(creditCards[0].id) : "");
   const numAmount = parseFloat(amount) || 0;
   const installmentPerMonth = isInstallment && installmentsCount > 0 ? numAmount / installmentsCount : numAmount;
+
+  const handleQuickCreateCategory = async (e) => {
+    e.preventDefault();
+    if (!newCatName.trim()) return;
+
+    try {
+      const created = await createCategory({
+        name: newCatName.trim(),
+        type,
+        budget_type: type === "expense" ? newCatBudgetType : "needs",
+        icon: newCatIcon,
+        color: newCatColor,
+        is_custom: true
+      });
+      if (created && created.id) {
+        setCategoryId(String(created.id));
+      }
+      setIsCreatingCategory(false);
+      setNewCatName("");
+    } catch (err) {
+      // Error handled in context toast
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -139,11 +175,42 @@ export const AddTransactionModal = ({ isOpen, onClose }) => {
           {/* Category & Payment Method */}
           <div className="form-row-2">
             <div className="form-group">
-              <label className="form-label">Categoria</label>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <label className="form-label" style={{ marginBottom: 0 }}>Categoria</label>
+                <button
+                  type="button"
+                  onClick={() => setIsCreatingCategory(!isCreatingCategory)}
+                  style={{
+                    background: isCreatingCategory ? "var(--accent-primary)" : "rgba(99, 102, 241, 0.12)",
+                    color: isCreatingCategory ? "#fff" : "var(--accent-primary)",
+                    border: "1px solid rgba(99, 102, 241, 0.25)",
+                    borderRadius: "var(--radius-sm)",
+                    padding: "2px 8px",
+                    fontSize: "0.75rem",
+                    fontWeight: 600,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                    cursor: "pointer",
+                    transition: "all 0.2s ease"
+                  }}
+                  title="Criar nova categoria customizada (ex: Pets, Veterinário)"
+                >
+                  {isCreatingCategory ? <X size={12} /> : <Plus size={12} />}
+                  <span>{isCreatingCategory ? "Cancelar" : "+ Nova Categoria"}</span>
+                </button>
+              </div>
+
               <select
                 className="form-select"
                 value={selectedCat}
-                onChange={(e) => setCategoryId(e.target.value)}
+                onChange={(e) => {
+                  if (e.target.value === "__new__") {
+                    setIsCreatingCategory(true);
+                  } else {
+                    setCategoryId(e.target.value);
+                  }
+                }}
                 required
               >
                 {filteredCategories.map((c) => (
@@ -151,6 +218,9 @@ export const AddTransactionModal = ({ isOpen, onClose }) => {
                     {c.name}
                   </option>
                 ))}
+                <option value="__new__" style={{ color: "var(--accent-primary)", fontWeight: 600 }}>
+                  ➕ + Criar nova categoria...
+                </option>
               </select>
             </div>
 
@@ -170,6 +240,104 @@ export const AddTransactionModal = ({ isOpen, onClose }) => {
               </select>
             </div>
           </div>
+
+          {/* Inline Quick Category Creation Panel */}
+          {isCreatingCategory && (
+            <div
+              style={{
+                background: "rgba(99, 102, 241, 0.05)",
+                border: "1px solid rgba(99, 102, 241, 0.25)",
+                borderRadius: "var(--radius-md)",
+                padding: 14,
+                marginBottom: 12,
+                animation: "fadeIn 0.2s ease",
+                display: "flex",
+                flexDirection: "column",
+                gap: 10
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 6 }}>
+                  <PawPrint size={15} color="var(--accent-primary)" />
+                  Criar Categoria Rápida
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsCreatingCategory(false)}
+                  style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer" }}
+                >
+                  <X size={15} />
+                </button>
+              </div>
+
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  type="text"
+                  className="form-input"
+                  style={{ flex: 1 }}
+                  placeholder="Nome (ex: Pets & Animais, Veterinário, Ração)"
+                  value={newCatName}
+                  onChange={(e) => setNewCatName(e.target.value)}
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={handleQuickCreateCategory}
+                  disabled={!newCatName.trim()}
+                  className="btn btn-primary"
+                  style={{ padding: "0 14px", fontSize: "0.8rem", whiteSpace: "nowrap" }}
+                >
+                  <Check size={14} /> Salvar
+                </button>
+              </div>
+
+              {/* Icon & Color selector */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>Ícone:</span>
+                  {QUICK_CATEGORY_ICONS.map((ic) => (
+                    <button
+                      key={ic}
+                      type="button"
+                      onClick={() => setNewCatIcon(ic)}
+                      style={{
+                        width: 26,
+                        height: 26,
+                        borderRadius: "var(--radius-sm)",
+                        border: newCatIcon === ic ? `2px solid ${newCatColor}` : "1px solid var(--border-color)",
+                        background: newCatIcon === ic ? `${newCatColor}20` : "var(--bg-input)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer"
+                      }}
+                    >
+                      <Icon name={ic} size={14} color={newCatColor} />
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>Cor:</span>
+                  {QUICK_CATEGORY_COLORS.slice(0, 6).map((col) => (
+                    <button
+                      key={col}
+                      type="button"
+                      onClick={() => setNewCatColor(col)}
+                      style={{
+                        width: 18,
+                        height: 18,
+                        borderRadius: "50%",
+                        background: col,
+                        border: newCatColor === col ? "2px solid #fff" : "none",
+                        cursor: "pointer"
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Credit Card Selector if payment is credit_card */}
           {paymentMethod === "credit_card" && (

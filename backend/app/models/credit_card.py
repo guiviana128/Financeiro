@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
@@ -22,5 +22,7 @@ class CreditCard(Base):
     is_automated = Column(Boolean, default=True)
     webhook_token = Column(String(64), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
 
+    user = relationship("User", back_populates="credit_cards")
     transactions = relationship("Transaction", back_populates="credit_card", cascade="all, delete-orphan")

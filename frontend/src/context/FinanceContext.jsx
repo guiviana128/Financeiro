@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { api } from "../services/api";
 import { getCurrentMonth } from "../utils/formatters";
+import { useAuth } from "./AuthContext";
 
 const FinanceContext = createContext();
 
@@ -20,9 +21,8 @@ const INITIAL_CATEGORIES = [
   { id: 13, name: "Freelance & Extras", icon: "Laptop", color: "#60a5fa", type: "income", budget_type: "wants" }
 ];
 
-const INITIAL_CARDS = [];
-
 export const FinanceProvider = ({ children }) => {
+  const { user, isAuthenticated } = useAuth();
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
   const [isPrivacyMode, setIsPrivacyMode] = useState(() => {
     return localStorage.getItem("finflow_privacy") === "true";
@@ -115,6 +115,11 @@ export const FinanceProvider = ({ children }) => {
   }, []);
 
   const loadAllData = useCallback(async () => {
+    if (!isAuthenticated) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -158,11 +163,11 @@ export const FinanceProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [selectedMonth, computeLocalDashboard, categories]);
+  }, [selectedMonth, computeLocalDashboard, categories, isAuthenticated]);
 
   useEffect(() => {
     loadAllData();
-  }, [loadAllData]);
+  }, [loadAllData, user]);
 
   // Transaction operations
   const addTransaction = async (data) => {
@@ -182,8 +187,8 @@ export const FinanceProvider = ({ children }) => {
       showToast("Transação registrada com sucesso!", "success");
       await loadAllData();
     } catch (err) {
-      showToast(err.message || "Transação salva!", "success");
-      await loadAllData();
+      console.error(err);
+      showToast(err.message || "Erro ao salvar transação.", "error");
     }
   };
 
@@ -197,7 +202,8 @@ export const FinanceProvider = ({ children }) => {
       showToast("Transação removida!", "info");
       await loadAllData();
     } catch (err) {
-      showToast("Transação removida.", "info");
+      console.error(err);
+      showToast(err.message || "Erro ao remover transação.", "error");
     }
   };
 
@@ -211,6 +217,7 @@ export const FinanceProvider = ({ children }) => {
       await loadAllData();
     } catch (err) {
       console.error(err);
+      showToast(err.message || "Erro ao alterar status da transação.", "error");
     }
   };
 
@@ -224,7 +231,7 @@ export const FinanceProvider = ({ children }) => {
         amount: amount,
         type: "expense",
         payment_method: "pix",
-        category_id: 1, // Moradia & Contas
+        category_id: 1,
         date: new Date().toISOString().split("T")[0],
         is_paid: true,
         notes: `Quitação da fatura de ${cardName}`
@@ -232,23 +239,28 @@ export const FinanceProvider = ({ children }) => {
       showToast(`Fatura do ${cardName} paga com sucesso! Limite liberado.`, "success");
       await loadAllData();
     } catch (err) {
-      showToast("Erro ao processar pagamento da fatura.", "error");
+      console.error(err);
+      showToast(err.message || "Erro ao processar pagamento da fatura.", "error");
     }
   };
 
   // Category creation
   const createCategory = async (data) => {
     try {
+      let created = null;
       if (backendConnected) {
-        await api.createCategory(data);
+        created = await api.createCategory(data);
       } else {
-        const newCat = { id: Date.now(), ...data };
-        setCategories(prev => [...prev, newCat]);
+        created = { id: Date.now(), ...data };
+        setCategories(prev => [...prev, created]);
       }
       showToast("Categoria adicionada com sucesso!", "success");
       await loadAllData();
+      return created;
     } catch (err) {
+      console.error(err);
       showToast(err.message || "Erro ao criar categoria.", "error");
+      throw err;
     }
   };
 
@@ -271,7 +283,8 @@ export const FinanceProvider = ({ children }) => {
       showToast("Cartão de crédito cadastrado!", "success");
       await loadAllData();
     } catch (err) {
-      showToast(err.message || "Cartão cadastrado!", "success");
+      console.error(err);
+      showToast(err.message || "Erro ao cadastrar cartão.", "error");
     }
   };
 
@@ -285,7 +298,8 @@ export const FinanceProvider = ({ children }) => {
       showToast("Cartão removido com sucesso.", "info");
       await loadAllData();
     } catch (err) {
-      showToast("Cartão removido.", "info");
+      console.error(err);
+      showToast(err.message || "Erro ao remover cartão.", "error");
     }
   };
 
@@ -310,7 +324,8 @@ export const FinanceProvider = ({ children }) => {
       showToast("Orçamento salvo!", "success");
       await loadAllData();
     } catch (err) {
-      showToast("Orçamento salvo!", "success");
+      console.error(err);
+      showToast(err.message || "Erro ao salvar orçamento.", "error");
     }
   };
 
@@ -324,7 +339,8 @@ export const FinanceProvider = ({ children }) => {
       showToast("Orçamento removido.", "info");
       await loadAllData();
     } catch (err) {
-      showToast("Orçamento removido.", "info");
+      console.error(err);
+      showToast(err.message || "Erro ao remover orçamento.", "error");
     }
   };
 
@@ -346,7 +362,8 @@ export const FinanceProvider = ({ children }) => {
       showToast("Meta criada com sucesso!", "success");
       await loadAllData();
     } catch (err) {
-      showToast("Meta criada com sucesso!", "success");
+      console.error(err);
+      showToast(err.message || "Erro ao criar meta.", "error");
     }
   };
 
@@ -371,7 +388,8 @@ export const FinanceProvider = ({ children }) => {
       showToast("Meta atualizada!", "success");
       await loadAllData();
     } catch (err) {
-      showToast("Meta atualizada!", "success");
+      console.error(err);
+      showToast(err.message || "Erro ao atualizar meta.", "error");
     }
   };
 
@@ -385,7 +403,8 @@ export const FinanceProvider = ({ children }) => {
       showToast("Meta removida.", "info");
       await loadAllData();
     } catch (err) {
-      showToast("Meta removida.", "info");
+      console.error(err);
+      showToast(err.message || "Erro ao remover meta.", "error");
     }
   };
 
@@ -397,7 +416,8 @@ export const FinanceProvider = ({ children }) => {
       showToast("Dados de demonstração restaurados!", "success");
       await loadAllData();
     } catch (err) {
-      showToast("Dados de demonstração restaurados!", "success");
+      console.error(err);
+      showToast(err.message || "Erro ao restaurar dados.", "error");
     }
   };
 

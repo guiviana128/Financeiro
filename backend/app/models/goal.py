@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Float, Date, DateTime
+from sqlalchemy import Column, Integer, String, Float, Date, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
 
@@ -13,3 +14,6 @@ class Goal(Base):
     category_icon = Column(String(50), default="Target")
     color = Column(String(30), default="#10b981")
     created_at = Column(DateTime, default=datetime.utcnow)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+
+    user = relationship("User", back_populates="goals")

@@ -1,13 +1,31 @@
-const API_BASE_URL = "http://localhost:8000/api";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
+
+let authToken = typeof window !== "undefined" ? localStorage.getItem("finflow_auth_token") : null;
+
+export const setAuthToken = (token) => {
+  authToken = token;
+  if (typeof window !== "undefined") {
+    if (token) {
+      localStorage.setItem("finflow_auth_token", token);
+    } else {
+      localStorage.removeItem("finflow_auth_token");
+    }
+  }
+};
+
+export const getAuthToken = () => authToken;
 
 async function fetchJson(url, options = {}) {
   try {
+    const headers = {
+      "Content-Type": "application/json",
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      ...(options.headers || {})
+    };
+
     const res = await fetch(`${API_BASE_URL}${url}`, {
-      headers: {
-        "Content-Type": "application/json",
-        ...(options.headers || {})
-      },
-      ...options
+      ...options,
+      headers
     });
 
     if (!res.ok) {
@@ -23,6 +41,14 @@ async function fetchJson(url, options = {}) {
 }
 
 export const api = {
+  // Authentication
+  auth: {
+    login: (credentials) => fetchJson(`/auth/login`, { method: "POST", body: JSON.stringify(credentials) }),
+    register: (userData) => fetchJson(`/auth/register`, { method: "POST", body: JSON.stringify(userData) }),
+    getMe: () => fetchJson(`/auth/me`),
+    updateProfile: (data) => fetchJson(`/auth/profile`, { method: "PUT", body: JSON.stringify(data) })
+  },
+
   // Dashboard
   getDashboard: (month) => fetchJson(`/dashboard/summary${month ? `?month=${month}` : ""}`),
 
@@ -49,7 +75,9 @@ export const api = {
   togglePaidStatus: (id) => fetchJson(`/transactions/${id}/toggle-paid`, { method: "PATCH" }),
   deleteTransaction: (id, deleteAllInstallments = false) =>
     fetchJson(`/transactions/${id}?delete_all_installments=${deleteAllInstallments}`, { method: "DELETE" }),
-  getExportCsvUrl: (month) => `${API_BASE_URL}/transactions/export/csv${month ? `?month=${month}` : ""}`,
+  getExportCsvUrl: (month) => {
+    return `${API_BASE_URL}/transactions/export/csv${month ? `?month=${month}` : ""}`;
+  },
 
   // Categories
   getCategories: (type) => fetchJson(`/categories${type ? `?type=${type}` : ""}`),

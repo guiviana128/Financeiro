@@ -6,18 +6,20 @@ from typing import Optional, Dict, Any, List
 from datetime import date, datetime
 from pydantic import BaseModel
 from app.database import get_db
+from app.models.user import User
 from app.models.credit_card import CreditCard
 from app.models.category import Category
 from app.models.transaction import Transaction
 from app.schemas.transaction_schema import TransactionCreate
 from app.services.finance_service import create_transactions_with_installments, calculate_card_metrics
+from app.services.auth_service import get_optional_current_user, get_current_user
 
 router = APIRouter(prefix="/api/open-finance", tags=["Open Finance & Webhooks"])
 
 class PurchaseWebhookPayload(BaseModel):
     merchant: str = "iFood *Restaurante"
     amount: float = 89.90
-    cpf: Optional[str] = None # Ex: 123.456.789-00 ou 12345678900
+    cpf: Optional[str] = None
     card_id: Optional[int] = None
     card_last_four: Optional[str] = None
     bank: Optional[str] = None
@@ -28,14 +30,15 @@ class PurchaseWebhookPayload(BaseModel):
     notes: Optional[str] = "Compra capturada via Integração Bancária / Webhook"
     webhook_token: Optional[str] = None
 
-# Smart merchant -> Category auto-mapping
 MERCHANT_CATEGORY_KEYWORDS = {
     "Supermercado & Alimentação": ["mercado", "supermercado", "carrefour", "pao de acucar", "assai", "atacadao", "hortifruti", "padaria", "ifood", "rappi", "restaurante", "mcdonalds", "burger", "lanchonete", "bar", "cafe", "starbucks"],
+    "Pets & Animais": ["petz", "cobasi", "pet", "petshop", "veterinario", "veterinaria", "vet", "petlove", "agropecuaria", "banho e tosa", "racao", "animal"],
     "Transporte & Combustível": ["posto", "shell", "ipiranga", "petrobras", "combustivel", "uber", "99", "99app", "taxi", "estacionamento", "pedagio", "sem parar"],
     "Compras & Vestuário": ["amazon", "mercado livre", "shopee", "aliexpress", "magalu", "magazine", "zara", "renner", "riachuelo", "centauro", "nike", "adidas", "shein"],
     "Saúde & Farmácia": ["drogaria", "farmacia", "drogasil", "raia", "pacheco", "sao paulo", "consulta", "laboratorio", "hospital", "dentista", "otica"],
     "Assinaturas & Streaming": ["netflix", "spotify", "prime video", "disney", "youtube", "hbo", "max", "apple", "google", "chatgpt", "openai", "cloud"],
-    "Lazer & Restaurantes": ["cinema", "ingresso", "show", "teatro", "sympla", "eventim", "hotel", "airbnb", "resort", "viagem", "voo", "latam", "gol", "azul"]
+    "Lazer & Restaurantes": ["cinema", "ingresso", "show", "teatro", "sympla", "eventim", "hotel", "airbnb", "resort", "viagem", "voo", "latam", "gol", "azul"],
+    "Beleza & Cuidados": ["salao", "barbearia", "estetica", "manicure", "cabeleireiro", "boticario", "sephora", "natura"]
 }
 
 def clean_cpf_digits(cpf_str: Optional[str]) -> str:
@@ -43,7 +46,7 @@ def clean_cpf_digits(cpf_str: Optional[str]) -> str:
         return ""
     return re.sub(r"\D", "", cpf_str)
 
-def find_best_category(db: Session, merchant: str, explicit_cat_id: Optional[int] = None) -> int:
+def find_best_category(db: Session, merchant: str, explicit_cat_id: Optional[int] = None, user_id: Optional[int] = None) -> int:
     if explicit_cat_id:
         cat = db.query(Category).filter(Category.id == explicit_cat_id).first()
         if cat:
@@ -52,17 +55,23 @@ def find_best_category(db: Session, merchant: str, explicit_cat_id: Optional[int
     merchant_lower = merchant.lower()
     for cat_name, keywords in MERCHANT_CATEGORY_KEYWORDS.items():
         if any(kw in merchant_lower for kw in keywords):
-            cat = db.query(Category).filter(Category.name.ilike(f"%{cat_name.split('&')[0].strip()}%")).first()
+            cat_query = db.query(Category).filter(Category.name.ilike(f"%{cat_name.split('&')[0].strip()}%"))
+            if user_id:
+                cat_query = cat_query.filter((Category.user_id == user_id) | (Category.user_id == None))
+            cat = cat_query.first()
             if cat:
                 return cat.id
 
-    # Fallback to first expense category or default category
-    fallback = db.query(Category).filter(Category.type == "expense").first()
+    fallback_query = db.query(Category).filter(Category.type == "expense")
+    if user_id:
+        fallback_query = fallback_query.filter((Category.user_id == user_id) | (Category.user_id == None))
+    fallback = fallback_query.first()
     return fallback.id if fallback else 1
 
 @router.post("/webhook/purchase")
 def receive_bank_purchase_webhook(
     payload: PurchaseWebhookPayload,
+    current_user: Optional[User] = Depends(get_optional_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -71,19 +80,17 @@ def receive_bank_purchase_webhook(
     """
     clean_payload_cpf = clean_cpf_digits(payload.cpf)
 
-    # 1. Match Credit Card query
     query = db.query(CreditCard).filter(CreditCard.is_active == True)
+    if current_user:
+        query = query.filter(CreditCard.user_id == current_user.id)
 
-    # Filter by CPF if provided
     if clean_payload_cpf:
-        # Search all active cards and filter by matching digits
         all_active_cards = query.all()
         matching_cpf_cards = [
             c for c in all_active_cards 
             if clean_cpf_digits(c.holder_cpf) == clean_payload_cpf
         ]
         if matching_cpf_cards:
-            # Further filter by bank/card_id if available
             if payload.card_id:
                 card = next((c for c in matching_cpf_cards if c.id == payload.card_id), matching_cpf_cards[0])
             elif payload.card_last_four:
@@ -97,7 +104,6 @@ def receive_bank_purchase_webhook(
     else:
         card = None
 
-    # If no CPF or not found by CPF, fallback to standard lookup (card_id, last_four, bank)
     if not card:
         if payload.card_id:
             card = query.filter(CreditCard.id == payload.card_id).first()
@@ -109,7 +115,6 @@ def receive_bank_purchase_webhook(
             card = query.filter(CreditCard.webhook_token == payload.webhook_token).first()
         
     if not card:
-        # Match the first active automated card as ultimate fallback
         card = query.first()
         if not card:
             raise HTTPException(
@@ -117,11 +122,11 @@ def receive_bank_purchase_webhook(
                 detail="Nenhum cartão de crédito ativo cadastrado no sistema para vincular a transação."
             )
 
-    # 2. Match Category
-    category_id = find_best_category(db, payload.merchant, payload.category_id)
+    target_user_id = card.user_id or (current_user.id if current_user else None)
+
+    category_id = find_best_category(db, payload.merchant, payload.category_id, user_id=target_user_id)
     category = db.query(Category).filter(Category.id == category_id).first()
 
-    # 3. Determine Date
     tx_date = date.today()
     if payload.date:
         try:
@@ -129,7 +134,6 @@ def receive_bank_purchase_webhook(
         except Exception:
             tx_date = date.today()
 
-    # 4. Create Transaction
     installments_count = max(1, payload.installments or 1)
     notes_str = payload.notes or f"Transacao Open Finance ({card.bank})"
     if card.holder_cpf:
@@ -151,7 +155,7 @@ def receive_bank_purchase_webhook(
         notes=notes_str
     )
 
-    created_txs = create_transactions_with_installments(db, tx_in)
+    created_txs = create_transactions_with_installments(db, tx_in, user_id=target_user_id)
     metrics = calculate_card_metrics(db, card)
 
     return {
@@ -177,15 +181,25 @@ def receive_bank_purchase_webhook(
     }
 
 @router.get("/connections")
-def get_bank_connections(db: Session = Depends(get_db)):
+def get_bank_connections(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """
-    Returns the Open Finance status for all registered credit cards.
+    Returns the Open Finance status for credit cards belonging to current user.
     """
-    cards = db.query(CreditCard).all()
+    cards = db.query(CreditCard).filter(CreditCard.user_id == current_user.id).all()
     connections = []
     for card in cards:
-        tx_count = db.query(Transaction).filter(Transaction.credit_card_id == card.id).count()
-        last_tx = db.query(Transaction).filter(Transaction.credit_card_id == card.id).order_by(Transaction.id.desc()).first()
+        tx_count = db.query(Transaction).filter(
+            Transaction.credit_card_id == card.id,
+            Transaction.user_id == current_user.id
+        ).count()
+        last_tx = db.query(Transaction).filter(
+            Transaction.credit_card_id == card.id,
+            Transaction.user_id == current_user.id
+        ).order_by(Transaction.id.desc()).first()
+
         connections.append({
             "card_id": card.id,
             "card_name": card.name,

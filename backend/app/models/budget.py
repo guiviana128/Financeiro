@@ -9,5 +9,7 @@ class Budget(Base):
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=False)
     month = Column(String(7), nullable=False) # "YYYY-MM" or "DEFAULT"
     allocated_amount = Column(Float, nullable=False, default=0.0)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
 
     category = relationship("Category", back_populates="budgets")
+    user = relationship("User", back_populates="budgets")

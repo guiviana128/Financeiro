@@ -5,15 +5,17 @@ import { Icon } from "../common/Icon";
 import { Plus, Tag } from "lucide-react";
 
 const AVAILABLE_ICONS = [
-  "Home", "ShoppingCart", "Car", "HeartPulse", "Utensils", "ShoppingBag",
-  "Tv", "Plane", "TrendingUp", "ShieldCheck", "Briefcase", "Coins", "Laptop",
-  "Coffee", "Smartphone", "BookOpen", "Fuel", "Gift", "Music", "Dumbbell"
+  "PawPrint", "Dog", "Cat", "Bone", "Home", "ShoppingCart", "Car", "HeartPulse",
+  "GraduationCap", "Utensils", "ShoppingBag", "Tv", "Plane", "Sparkles",
+  "Wrench", "Gift", "Gamepad2", "Baby", "Stethoscope", "TrendingUp",
+  "ShieldCheck", "Briefcase", "Coins", "Laptop", "Coffee", "Smartphone",
+  "BookOpen", "Fuel", "Music", "Dumbbell", "Smile", "Camera", "Film", "Wallet", "Tag"
 ];
 
 const AVAILABLE_COLORS = [
-  "#6366f1", "#f59e0b", "#3b82f6", "#ef4444", "#ec4899",
-  "#14b8a6", "#06b6d4", "#f97316", "#10b981", "#8b5cf6",
-  "#e11d48", "#84cc16", "#d946ef", "#0284c7"
+  "#f97316", "#ef4444", "#ec4899", "#d946ef", "#8b5cf6",
+  "#6366f1", "#3b82f6", "#0284c7", "#06b6d4", "#14b8a6",
+  "#10b981", "#84cc16", "#f59e0b", "#e11d48", "#64748b"
 ];
 
 export const CategoriesModal = ({ isOpen, onClose }) => {
