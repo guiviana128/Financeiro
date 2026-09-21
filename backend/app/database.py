@@ -36,6 +36,7 @@ def run_auto_migrations():
             ensure_column("credit_cards", "user_id", "INTEGER")
 
             # Check user_id in all models
+            ensure_column("users", "avatar_url", "TEXT")
             ensure_column("transactions", "user_id", "INTEGER")
             ensure_column("categories", "user_id", "INTEGER")
             ensure_column("budgets", "user_id", "INTEGER")

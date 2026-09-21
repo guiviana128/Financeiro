@@ -10,6 +10,7 @@ class User(Base):
     name = Column(String(100), nullable=False)
     email = Column(String(150), unique=True, index=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
+    avatar_url = Column(String(500000), nullable=True) # Suporta URL ou Base64
     created_at = Column(DateTime, default=datetime.utcnow)
 
     categories = relationship("Category", back_populates="user", cascade="all, delete-orphan")

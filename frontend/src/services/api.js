@@ -19,6 +19,7 @@ async function fetchJson(url, options = {}) {
   try {
     const headers = {
       "Content-Type": "application/json",
+      "ngrok-skip-browser-warning": "true",
       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       ...(options.headers || {})
     };
