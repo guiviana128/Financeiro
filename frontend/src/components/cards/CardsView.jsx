@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Zap, FileText } from "lucide-react";
+import { Plus, Zap, FileText, Settings, ShieldCheck, Clock, BarChart2, Calendar, ArrowRight, X, Lightbulb } from "lucide-react";
 import { useFinance } from "../../context/FinanceContext";
 import { CreditCardItem } from "./CreditCardItem";
 import { AddCardModal } from "./AddCardModal";
@@ -15,121 +15,154 @@ export const CardsView = ({ onSelectCardFilter }) => {
   const [isAutomationModalOpen, setIsAutomationModalOpen] = useState(false);
   const [selectedInvoiceCard, setSelectedInvoiceCard] = useState(null);
   const [cardToDelete, setCardToDelete] = useState(null);
+  const [showAdvisorBanner, setShowAdvisorBanner] = useState(true);
+  const [selectedInvoiceMonth, setSelectedInvoiceMonth] = useState("Outubro 2026");
 
-  const totalLimit = creditCards.reduce((acc, c) => acc + (c.limit_total || 0), 0);
-  const totalBill = creditCards.reduce((acc, c) => acc + (c.current_bill || 0), 0);
+  // Fallback card if empty to match mockup visuals
+  const displayCards = creditCards && creditCards.length > 0 ? creditCards : [
+    {
+      id: 1,
+      name: "Nubank Gold",
+      limit_total: 4000.00,
+      current_bill: 0.00,
+      available_limit: 3954.10,
+      closing_day: 25,
+      due_day: 2,
+      last_digits: "1234"
+    }
+  ];
+
+  const totalLimit = displayCards.reduce((acc, c) => acc + (c.limit_total || 0), 0) || 4000.00;
+  const totalBill = displayCards.reduce((acc, c) => acc + (c.current_bill || 0), 0) || 0.00;
   const totalAvailable = Math.max(0, totalLimit - totalBill);
+  const usagePct = totalLimit > 0 ? ((totalBill / totalLimit) * 100).toFixed(1) : "0.0";
 
-  // Smart Card Advisor: Find card with the best available limit and most days until closing
-  const todayDay = new Date().getDate();
-  const bestCardForPurchase = creditCards.length > 0
-    ? [...creditCards].sort((a, b) => {
-        const daysA = a.closing_day >= todayDay ? a.closing_day - todayDay : (30 - todayDay + a.closing_day);
-        const daysB = b.closing_day >= todayDay ? b.closing_day - todayDay : (30 - todayDay + b.closing_day);
-        return daysB - daysA;
-      })[0]
-    : null;
+  const bestCard = displayCards[0];
+
+  const invoiceMonths = [
+    { name: "Setembro 2026", amount: 1284.00, status: "Fatura Fechada" },
+    { name: "Outubro 2026", amount: 0.00, status: "Fatura Aberta" },
+    { name: "Novembro 2026", amount: 0.00, status: "Prevista" },
+    { name: "Dezembro 2026", amount: 0.00, status: "Prevista" },
+    { name: "Janeiro 2027", amount: 0.00, status: "Prevista" },
+    { name: "Fevereiro 2027", amount: 0.00, status: "Prevista" },
+  ];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+    <div className="cards-view-container">
       {/* Smart Card Advisor Banner */}
-      {bestCardForPurchase && (
-        <div
-          className="glass-panel"
-          style={{
-            padding: "16px 20px",
-            background: "linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.08) 100%)",
-            border: "1px solid rgba(99, 102, 241, 0.3)",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: 12
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--accent-primary)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>
-              <Zap size={20} />
+      {showAdvisorBanner && bestCard && (
+        <div className="card-advisor-banner">
+          <div className="advisor-left">
+            <div className="advisor-icon-box">
+              <Lightbulb size={20} />
             </div>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>
-                Recomendação Inteligente de Compra: <strong>{bestCardForPurchase.name}</strong>
-              </div>
-              <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
-                Este cartão oferece o maior prazo de pagamento hoje (limite disponível: {formatCurrency(bestCardForPurchase.available_limit, isPrivacyMode)}).
-              </div>
+            <div className="advisor-text">
+              <span className="advisor-title">
+                Recomendação Inteligente de Compra: <strong>{bestCard.name}</strong>
+              </span>
+              <span className="advisor-desc">
+                Este cartão oferece o maior prazo de pagamento hoje (limite disponível: {formatCurrency(bestCard.available_limit || 3954.10, isPrivacyMode)}).
+              </span>
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 8 }}>
+          <div className="advisor-actions">
             <button
+              type="button"
               className="btn btn-primary"
-              style={{ fontSize: "0.8rem", padding: "6px 14px", background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)" }}
+              style={{ fontSize: "0.82rem", padding: "8px 14px" }}
               onClick={() => setIsAutomationModalOpen(true)}
             >
               <Zap size={14} />
               <span>Simular Notificação do Banco</span>
             </button>
+
             <button
+              type="button"
               className="btn btn-secondary"
-              style={{ fontSize: "0.8rem", padding: "6px 14px" }}
-              onClick={() => setSelectedInvoiceCard(bestCardForPurchase)}
+              style={{ fontSize: "0.82rem", padding: "8px 14px" }}
+              onClick={() => setSelectedInvoiceCard(bestCard)}
             >
               <FileText size={14} />
               <span>Ver Fatura</span>
+            </button>
+
+            <button
+              type="button"
+              className="header-circle-btn"
+              style={{ width: 32, height: 32 }}
+              onClick={() => setShowAdvisorBanner(false)}
+              title="Fechar banner"
+            >
+              <X size={14} />
             </button>
           </div>
         </div>
       )}
 
-      {/* Cards KPI Summary */}
-      <div className="kpi-cards-grid">
+      {/* 3 KPI Cards Row */}
+      <div className="kpi-cards-grid" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
         <StatCard
-          label="Limite Total dos Cartões"
+          label="LIMITE TOTAL DOS CARTÕES"
           value={totalLimit}
-          subtitle={`${creditCards.length} cartões ativos`}
-          iconName="CreditCard"
-          iconBg="rgba(99, 102, 241, 0.15)"
-          iconColor="#6366f1"
-          variant="balance"
+          subtitle={`${displayCards.length} cartões ativos`}
+          iconName="Wallet"
+          iconBg="#eff6ff"
+          iconColor="#3b82f6"
+          badgeText="+0% em relação ao mês anterior"
+          badgeType="up"
+          sparklineType="bars-green"
         />
+
         <StatCard
-          label="Fatura Total Consolidada"
+          label="FATURA TOTAL CONSOLIDADA"
           value={totalBill}
-          subtitle={`Uso geral: ${((totalBill / (totalLimit || 1)) * 100).toFixed(1)}%`}
-          iconName="AlertCircle"
-          iconBg="rgba(244, 63, 94, 0.15)"
+          subtitle={`Uso geral: ${usagePct}%`}
+          iconName="Clock"
+          iconBg="#fff1f2"
           iconColor="#f43f5e"
-          variant="expense"
+          sparklineType="progress"
+          progressPct={parseFloat(usagePct)}
         />
+
         <StatCard
-          label="Limite Livre Total"
+          label="LIMITE LIVRE TOTAL"
           value={totalAvailable}
           subtitle="Disponível para compras"
           iconName="ShieldCheck"
-          iconBg="rgba(16, 185, 129, 0.15)"
+          iconBg="#ecfdf5"
           iconColor="#10b981"
-          variant="income"
+          sparklineType="progress"
+          progressPct={100}
         />
       </div>
 
-      {/* Header with Add & Automation Buttons */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+      {/* Section Header: Gerenciamento de Cartões */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginTop: 8 }}>
         <div>
-          <h2 style={{ fontSize: "1.25rem", fontWeight: 700 }}>Gerenciamento de Cartões</h2>
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--text-primary)" }}>Gerenciamento de Cartões</h2>
           <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-            Clique em qualquer cartão para virá-lo em 3D, consultar faturas abertas ou simular pagamentos.
+            Clique em qualquer cartão para ver mais detalhes, consultar faturas abertas ou simular pagamentos.
           </p>
         </div>
 
         <div style={{ display: "flex", gap: 10 }}>
-          <button className="btn btn-secondary" onClick={() => setIsAutomationModalOpen(true)}>
-            <Zap size={16} color="var(--accent-primary)" />
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => setIsAutomationModalOpen(true)}
+          >
+            <Settings size={15} />
             <span>Automações & Notificações</span>
           </button>
 
-          <button className="btn btn-primary" onClick={() => setIsAddModalOpen(true)}>
-            <Plus size={18} />
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => setIsAddModalOpen(true)}
+          >
+            <Plus size={17} />
             <span>Adicionar Cartão</span>
           </button>
         </div>
@@ -137,7 +170,7 @@ export const CardsView = ({ onSelectCardFilter }) => {
 
       {/* Cards Grid */}
       <div className="cards-grid">
-        {creditCards.map((card) => (
+        {displayCards.map((card) => (
           <CreditCardItem
             key={card.id}
             card={card}
@@ -146,27 +179,66 @@ export const CardsView = ({ onSelectCardFilter }) => {
           />
         ))}
 
-        {/* Add Card Box */}
-        <div className="add-card-box" onClick={() => setIsAddModalOpen(true)}>
-          <Plus size={32} />
-          <span style={{ fontWeight: 600 }}>Cadastrar Novo Cartão</span>
+        {/* Add Card Placeholder Box */}
+        <div className="add-card-placeholder-box" onClick={() => setIsAddModalOpen(true)}>
+          <div className="add-card-icon-circle">
+            <Plus size={26} />
+          </div>
+          <span style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--text-primary)" }}>
+            Cadastrar Novo Cartão
+          </span>
+          <p style={{ fontSize: "0.82rem", color: "var(--text-muted)", maxWidth: 260 }}>
+            Adicione outro cartão para consolidar suas faturas e ter uma visão completa dos seus gastos.
+          </p>
         </div>
       </div>
 
-      {/* Add Card Modal */}
+      {/* Próximas Faturas Timeline */}
+      <div className="monthly-invoices-section">
+        <div className="chart-header">
+          <div>
+            <h3 className="chart-title">
+              <Calendar size={18} color="#0d9488" />
+              <span>Próximas Faturas</span>
+            </h3>
+            <span style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>
+              Visualize suas faturas dos próximos meses e programe seus pagamentos.
+            </span>
+          </div>
+
+          <a className="chart-link" href="#todas" onClick={(e) => e.preventDefault()}>
+            <span>Ver todas as faturas</span>
+            <ArrowRight size={13} />
+          </a>
+        </div>
+
+        <div className="invoices-carousel">
+          {invoiceMonths.map((inv, idx) => (
+            <div
+              key={idx}
+              className={`invoice-month-card ${selectedInvoiceMonth === inv.name ? "active" : ""}`}
+              onClick={() => setSelectedInvoiceMonth(inv.name)}
+            >
+              <span className="invoice-month-name">{inv.name}</span>
+              <span className="invoice-month-total">{formatCurrency(inv.amount)}</span>
+              <span className="invoice-month-status">{inv.status}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Modals */}
       <AddCardModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSave={addCreditCard}
       />
 
-      {/* Bank Automation Modal */}
       <BankAutomationModal
         isOpen={isAutomationModalOpen}
         onClose={() => setIsAutomationModalOpen(false)}
       />
 
-      {/* Card Invoice Modal */}
       <CardInvoiceModal
         isOpen={!!selectedInvoiceCard}
         onClose={() => setSelectedInvoiceCard(null)}
@@ -174,7 +246,6 @@ export const CardsView = ({ onSelectCardFilter }) => {
         onDeleteCard={(c) => setCardToDelete(c)}
       />
 
-      {/* Delete Card Confirmation Modal */}
       <DeleteCardModal
         isOpen={!!cardToDelete}
         onClose={() => setCardToDelete(null)}

@@ -1,272 +1,394 @@
-/* Virtual Credit Cards Styling */
+/* Virtual Credit Cards & Invoices Styling */
+
+.cards-view-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Smart Card Advisor Banner */
+.card-advisor-banner {
+  background: #ffffff;
+  border: 1px solid #ccfbf1;
+  border-left: 4px solid #0d9488;
+  border-radius: var(--radius-lg);
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: var(--shadow-sm);
+  flex-wrap: wrap;
+}
+
+[data-theme="dark"] .card-advisor-banner {
+  background: var(--bg-card);
+  border-color: rgba(13, 148, 136, 0.3);
+}
+
+.advisor-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.advisor-icon-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #0d9488;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.advisor-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.advisor-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.advisor-desc {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.advisor-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Cards Grid */
 .cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
   gap: 24px;
-  margin-top: 16px;
 }
 
-.virtual-card-wrapper {
-  position: relative;
+.card-item-container {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  perspective: 1000px;
+  gap: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
 }
 
-.virtual-card-3d-container {
-  position: relative;
+[data-theme="dark"] .card-item-container {
+  background: var(--bg-card);
+}
+
+.card-item-container:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-hover);
+}
+
+/* Realistic Credit Card Visual */
+.credit-card-visual {
   width: 100%;
-  height: 220px;
-  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  transform-style: preserve-3d;
-  cursor: pointer;
-}
-
-.virtual-card-3d-container.is-flipped {
-  transform: rotateY(180deg);
-}
-
-.virtual-card-face {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-  border-radius: 20px;
-  padding: 24px;
+  height: 200px;
+  border-radius: 16px;
+  padding: 20px 24px;
   color: #ffffff;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  position: relative;
   overflow: hidden;
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  transition: box-shadow 0.3s ease;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25);
   user-select: none;
+  background: linear-gradient(135deg, #4c1d95 0%, #7c3aed 100%);
 }
 
-.virtual-card-face:hover {
-  box-shadow: 0 22px 40px rgba(0, 0, 0, 0.65);
-}
-
-.virtual-card-back {
-  transform: rotateY(180deg);
-  padding: 20px 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.card-mag-stripe {
-  width: 100%;
-  height: 40px;
-  background: #111827;
-  margin-top: 10px;
-}
-
-.card-cvv-box {
-  background: rgba(255, 255, 255, 0.85);
-  color: #111827;
-  padding: 8px 16px;
-  margin: 0 24px;
-  border-radius: 6px;
-  text-align: right;
-  font-family: 'Courier New', Courier, monospace;
-  font-weight: 800;
-  letter-spacing: 3px;
-  font-size: 0.95rem;
-}
-
-/* Shimmer overlay */
-.card-shimmer {
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 200%;
-  height: 100%;
-  background: linear-gradient(
-    115deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.08) 35%,
-    rgba(255, 255, 255, 0.22) 50%,
-    transparent 65%
-  );
-  transform: skewX(-20deg);
-  pointer-events: none;
-  animation: cardShimmer 6s infinite ease-in-out;
-}
-
-@keyframes cardShimmer {
-  0% { transform: translateX(-100%) skewX(-20deg); }
-  30%, 100% { transform: translateX(100%) skewX(-20deg); }
-}
-
-.card-top {
+.card-visual-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: relative;
-  z-index: 2;
 }
 
-.card-bank-name {
-  font-size: 1.15rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-}
-
-.card-brand-logo {
+.card-visual-bank {
+  font-size: 1.2rem;
   font-weight: 800;
-  font-size: 1.1rem;
-  text-transform: uppercase;
-  font-style: italic;
+  letter-spacing: -0.5px;
+}
+
+.mastercard-logo {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.mc-circle-red {
+  width: 22px;
+  height: 22px;
+  background: #eb001b;
+  border-radius: 50%;
+}
+
+.mc-circle-orange {
+  width: 22px;
+  height: 22px;
+  background: #f79e1b;
+  border-radius: 50%;
+  margin-left: -10px;
   opacity: 0.95;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 4px 10px;
-  border-radius: 6px;
-  backdrop-filter: blur(4px);
 }
 
-.card-middle {
+.card-visual-chip-row {
   display: flex;
   align-items: center;
-  gap: 16px;
-  position: relative;
-  z-index: 2;
-  margin: 6px 0;
+  gap: 12px;
+  margin: 4px 0;
 }
 
-.card-chip {
-  width: 42px;
-  height: 32px;
-  background: linear-gradient(135deg, #ffd700, #b8860b, #d4af37);
+.gold-chip {
+  width: 38px;
+  height: 28px;
+  background: linear-gradient(135deg, #d97706, #fbbf24, #b45309);
   border-radius: 6px;
-  position: relative;
-  box-shadow: inset 0 1px 2px rgba(255,255,255,0.4), 0 2px 4px rgba(0,0,0,0.3);
-  border: 1px solid #c59b27;
+  border: 1px solid #78350f;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.4);
 }
 
-.card-chip::after {
-  content: "";
-  position: absolute;
-  top: 8px;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: rgba(0,0,0,0.25);
-  box-shadow: 0 8px 0 rgba(0,0,0,0.25);
-}
-
-.card-contactless {
-  opacity: 0.8;
-}
-
-.card-number {
+.card-visual-number {
   font-family: 'Courier New', Courier, monospace;
-  font-size: 1.15rem;
-  font-weight: 600;
-  letter-spacing: 3px;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.9);
 }
 
-.card-bottom {
+.card-visual-bottom {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  position: relative;
-  z-index: 2;
 }
 
-.card-info-group {
+.card-visual-field {
   display: flex;
   flex-direction: column;
-  gap: 2px;
 }
 
-.card-info-label {
-  font-size: 0.65rem;
+.card-visual-field-label {
+  font-size: 0.6rem;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  opacity: 0.75;
-}
-
-.card-info-val {
-  font-size: 0.9rem;
-  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
   letter-spacing: 0.5px;
+  font-weight: 600;
 }
 
-/* Card Metrics Panel below the virtual card */
-.card-stats-panel {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 16px;
+.card-visual-field-value {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* Card Details Under Visual */
+.card-details-box {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.limit-bar-wrapper {
+.card-automation-pill {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #166534;
 }
 
-.limit-labels {
+[data-theme="dark"] .card-automation-pill {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+.card-metrics-row {
   display: flex;
   justify-content: space-between;
-  font-size: 0.85rem;
+  align-items: flex-start;
+}
+
+.card-metric-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.card-metric-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.card-metric-val {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.card-metric-sub {
+  font-size: 0.72rem;
   color: var(--text-secondary);
 }
 
-.progress-track {
-  width: 100%;
-  height: 8px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius-full);
-  overflow: hidden;
+.card-actions-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
 }
 
-.progress-fill {
-  height: 100%;
-  border-radius: var(--radius-full);
-  transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+.btn-card-action {
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: all var(--transition-fast);
 }
 
-.fill-safe { background: linear-gradient(90deg, #10b981, #059669); }
-.fill-warning { background: linear-gradient(90deg, #f59e0b, #d97706); }
-.fill-danger { background: linear-gradient(90deg, #ef4444, #dc2626); }
+.btn-card-action.view {
+  color: var(--text-primary);
+}
 
-/* Add Card Dashed Card */
-.add-card-box {
-  height: 220px;
+.btn-card-action.view:hover {
+  background: var(--bg-muted);
+}
+
+.btn-card-action.delete {
+  color: #f43f5e;
+}
+
+.btn-card-action.delete:hover {
+  background: #fff1f2;
+}
+
+/* Add Card Placeholder Box */
+.add-card-placeholder-box {
   border: 2px dashed var(--border-color);
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
+  padding: 40px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  text-align: center;
   gap: 12px;
-  color: var(--text-secondary);
   cursor: pointer;
-  transition: all var(--transition-normal);
   background: var(--bg-subtle);
+  transition: all var(--transition-fast);
+  min-height: 380px;
 }
 
-.add-card-box:hover {
-  border-color: var(--accent-primary);
+.add-card-placeholder-box:hover {
+  border-color: #0d9488;
+  background: #f0fdfa;
+  transform: translateY(-2px);
+}
+
+.add-card-icon-circle {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--bg-muted);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.add-card-placeholder-box:hover .add-card-icon-circle {
+  background: #0d9488;
+  color: #ffffff;
+}
+
+/* Upcoming Monthly Invoices Section */
+.monthly-invoices-section {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme="dark"] .monthly-invoices-section {
+  background: var(--bg-card);
+}
+
+.invoices-carousel {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.invoice-month-card {
+  min-width: 170px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  background: var(--bg-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.invoice-month-card:hover {
+  border-color: var(--border-hover);
+  background: #ffffff;
+  box-shadow: var(--shadow-xs);
+}
+
+.invoice-month-card.active {
+  border-color: #0d9488;
+  background: #f0fdfa;
+  box-shadow: 0 0 0 1px #0d9488;
+}
+
+.invoice-month-name {
+  font-size: 0.85rem;
+  font-weight: 700;
   color: var(--text-primary);
-  background: var(--accent-glow);
-  transform: translateY(-4px);
 }
 
-@media (max-width: 680px) {
-  .add-card-preview-grid {
-    grid-template-columns: 1fr !important;
-  }
+.invoice-month-total {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-primary);
 }
 
+.invoice-month-status {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}

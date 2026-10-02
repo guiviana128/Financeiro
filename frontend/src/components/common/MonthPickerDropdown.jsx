@@ -3,8 +3,10 @@ import { Calendar, ChevronLeft, ChevronRight, ChevronDown, Sparkles } from "luci
 import { formatMonthLong, getCurrentMonth } from "../../utils/formatters";
 
 const MONTH_NAMES_SHORT = [
-  "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
-  "Jul", "Ago", "Set", "Out", "Nov", "Dez"
+  "Jan", "Fev", "Mar",
+  "Abr", "Mai", "Jun",
+  "Jul", "Ago", "Set",
+  "Out", "Nov", "Dez"
 ];
 
 export const MonthPickerDropdown = ({ selectedMonth, onSelectMonth }) => {
@@ -82,7 +84,7 @@ export const MonthPickerDropdown = ({ selectedMonth, onSelectMonth }) => {
   };
 
   return (
-    <div className="custom-month-picker-container" ref={containerRef} style={{ position: "relative" }}>
+    <div className="custom-month-picker-container" ref={containerRef}>
       {/* Trigger Capsule */}
       <div className="month-picker-pill">
         <button
@@ -105,10 +107,11 @@ export const MonthPickerDropdown = ({ selectedMonth, onSelectMonth }) => {
           </div>
           <span className="month-trigger-text">{formatMonthLong(selectedMonth)}</span>
           {isCurrentSelected && (
-            <span className="current-month-badge">Atual</span>
+            <span className="current-month-badge">ATUAL</span>
           )}
           <ChevronDown
             size={14}
+            className="month-chevron-icon"
             style={{
               transition: "transform 0.2s ease",
               transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
@@ -135,7 +138,7 @@ export const MonthPickerDropdown = ({ selectedMonth, onSelectMonth }) => {
           <div className="month-dropdown-header">
             <button
               type="button"
-              className="icon-btn-subtle"
+              className="year-nav-btn"
               onClick={() => setViewYear(v => v - 1)}
               title="Ano Anterior"
             >
@@ -146,7 +149,7 @@ export const MonthPickerDropdown = ({ selectedMonth, onSelectMonth }) => {
 
             <button
               type="button"
-              className="icon-btn-subtle"
+              className="year-nav-btn"
               onClick={() => setViewYear(v => v + 1)}
               title="Próximo Ano"
             >
@@ -159,17 +162,16 @@ export const MonthPickerDropdown = ({ selectedMonth, onSelectMonth }) => {
             {MONTH_NAMES_SHORT.map((name, idx) => {
               const itemMonthStr = `${viewYear}-${String(idx + 1).padStart(2, "0")}`;
               const isSelected = selectedMonth === itemMonthStr;
-              const isTodayMonth = currentCalMonth === itemMonthStr;
+              const isCurrent = currentCalMonth === itemMonthStr;
 
               return (
                 <button
                   key={idx}
                   type="button"
-                  className={`month-grid-btn ${isSelected ? "selected" : ""} ${isTodayMonth ? "is-today" : ""}`}
+                  className={`month-grid-btn ${isSelected ? "selected" : ""}`}
                   onClick={() => handleSelectMonthIdx(idx)}
                 >
                   <span>{name}</span>
-                  {isTodayMonth && <span className="today-dot" />}
                 </button>
               );
             })}
@@ -182,7 +184,7 @@ export const MonthPickerDropdown = ({ selectedMonth, onSelectMonth }) => {
               className="month-today-shortcut-btn"
               onClick={handleGoCurrent}
             >
-              <Sparkles size={13} />
+              <Sparkles size={14} className="sparkle-icon" />
               <span>Ir para Mês Atual</span>
             </button>
           </div>
@@ -191,3 +193,4 @@ export const MonthPickerDropdown = ({ selectedMonth, onSelectMonth }) => {
     </div>
   );
 };
+

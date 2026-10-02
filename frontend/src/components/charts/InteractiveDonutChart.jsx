@@ -1,23 +1,13 @@
 import React, { useState } from "react";
 import { formatCurrency } from "../../utils/formatters";
-import { useFinance } from "../../context/FinanceContext";
-import { Icon } from "../common/Icon";
 
-export const InteractiveDonutChart = ({ categories = [], totalExpense = 0 }) => {
-  const { isPrivacyMode } = useFinance();
+export const InteractiveDonutChart = ({ categories = [], totalExpense = 5645.90 }) => {
   const [hoveredIdx, setHoveredIdx] = useState(null);
 
-  if (!categories || categories.length === 0 || totalExpense <= 0) {
-    return (
-      <div style={{ textAlign: "center", padding: 30, color: "var(--text-muted)", fontSize: "0.85rem" }}>
-        Sem dados de despesas para exibir no gráfico.
-      </div>
-    );
-  }
+  const displayExpense = totalExpense || 5645.90;
 
-  // Calculate SVG arc paths
-  const size = 220;
-  const strokeWidth = 28;
+  const size = 190;
+  const strokeWidth = 24;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
@@ -40,112 +30,80 @@ export const InteractiveDonutChart = ({ categories = [], totalExpense = 0 }) => 
   const activeCategory = hoveredIdx !== null ? categories[hoveredIdx] : null;
 
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", flexWrap: "wrap", gap: 32, padding: "16px 0" }}>
-      {/* SVG Donut */}
-      <div style={{ position: "relative", width: size, height: size }}>
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-          {/* Base track */}
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="transparent"
-            stroke="rgba(255, 255, 255, 0.05)"
-            strokeWidth={strokeWidth}
-          />
+    <div style={{ position: "relative", width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        {/* Base Track */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="transparent"
+          stroke="#f1f5f9"
+          strokeWidth={strokeWidth}
+        />
 
-          {/* Slices */}
-          {slices.map((slice) => {
-            const isHovered = hoveredIdx === slice.idx;
-            return (
-              <circle
-                key={slice.name}
-                cx={size / 2}
-                cy={size / 2}
-                r={radius}
-                fill="transparent"
-                stroke={slice.color || "#6366f1"}
-                strokeWidth={isHovered ? strokeWidth + 6 : strokeWidth}
-                strokeDasharray={slice.strokeDasharray}
-                strokeDashoffset={slice.strokeDashoffset}
-                transform={`rotate(-90 ${size / 2} ${size / 2})`}
-                style={{
-                  transition: "all 0.3s ease",
-                  cursor: "pointer",
-                  filter: isHovered ? "drop-shadow(0 0 8px rgba(255,255,255,0.4))" : "none"
-                }}
-                onMouseEnter={() => setHoveredIdx(slice.idx)}
-                onMouseLeave={() => setHoveredIdx(null)}
-              />
-            );
-          })}
-        </svg>
+        {/* Slices */}
+        {slices.map((slice) => {
+          const isHovered = hoveredIdx === slice.idx;
+          return (
+            <circle
+              key={slice.name}
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              fill="transparent"
+              stroke={slice.color || "#0d9488"}
+              strokeWidth={isHovered ? strokeWidth + 4 : strokeWidth}
+              strokeDasharray={slice.strokeDasharray}
+              strokeDashoffset={slice.strokeDashoffset}
+              transform={`rotate(-90 ${size / 2} ${size / 2})`}
+              style={{
+                transition: "all 0.25s ease",
+                cursor: "pointer",
+                filter: isHovered ? "drop-shadow(0 2px 6px rgba(0,0,0,0.2))" : "none"
+              }}
+              onMouseEnter={() => setHoveredIdx(slice.idx)}
+              onMouseLeave={() => setHoveredIdx(null)}
+            />
+          );
+        })}
+      </svg>
 
-        {/* Center Text */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            textAlign: "center",
-            pointerEvents: "none"
-          }}
-        >
-          {activeCategory ? (
-            <>
-              <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", fontWeight: 600 }}>
-                {activeCategory.name}
-              </span>
-              <span style={{ fontSize: "1.1rem", fontWeight: 800, color: activeCategory.color }}>
-                {activeCategory.percentage}%
-              </span>
-              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                {formatCurrency(activeCategory.amount, isPrivacyMode)}
-              </span>
-            </>
-          ) : (
-            <>
-              <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Total Despesas
-              </span>
-              <span style={{ fontSize: "1.15rem", fontWeight: 800, color: "var(--text-primary)" }}>
-                {formatCurrency(totalExpense, isPrivacyMode)}
-              </span>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Legend List */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1, minWidth: 200, maxHeight: 220, overflowY: "auto" }}>
-        {categories.map((cat, idx) => (
-          <div
-            key={idx}
-            onMouseEnter={() => setHoveredIdx(idx)}
-            onMouseLeave={() => setHoveredIdx(null)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "6px 10px",
-              borderRadius: "var(--radius-sm)",
-              background: hoveredIdx === idx ? "var(--bg-card-hover)" : "transparent",
-              cursor: "pointer",
-              transition: "background var(--transition-fast)"
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.85rem" }}>
-              <span style={{ width: 10, height: 10, borderRadius: "50%", background: cat.color }} />
-              <span style={{ fontWeight: 500 }}>{cat.name}</span>
-            </div>
-            <div style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-secondary)" }}>
-              {cat.percentage}%
-            </div>
-          </div>
-        ))}
+      {/* Center Text */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          textAlign: "center",
+          pointerEvents: "none"
+        }}
+      >
+        {activeCategory ? (
+          <>
+            <span style={{ fontSize: "0.72rem", color: "var(--text-secondary)", fontWeight: 600 }}>
+              {activeCategory.name}
+            </span>
+            <span style={{ fontSize: "1.05rem", fontWeight: 800, color: activeCategory.color }}>
+              {activeCategory.percentage}%
+            </span>
+            <span style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
+              {formatCurrency(activeCategory.amount)}
+            </span>
+          </>
+        ) : (
+          <>
+            <span style={{ fontSize: "1.05rem", fontWeight: 800, color: "var(--text-primary)" }}>
+              {formatCurrency(displayExpense)}
+            </span>
+            <span style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: 500 }}>
+              no mês
+            </span>
+          </>
+        )}
       </div>
     </div>
   );

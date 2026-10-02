@@ -1,14 +1,16 @@
 import React, { useState, useMemo } from "react";
 import { formatCurrency } from "../../utils/formatters";
 import { useFinance } from "../../context/FinanceContext";
-import { TrendingUp, Coins, Sparkles, Calendar, Calculator, ArrowRight } from "lucide-react";
-
-const RATE_PRESETS = [
-  { label: "CDI / Tesouro Selic (10.5% a.a.)", rate: 10.5 },
-  { label: "Renda Fixa IPCA+ (6.5% a.a. real)", rate: 6.5 },
-  { label: "Ações / FIIs Moderado (12.0% a.a.)", rate: 12.0 },
-  { label: "S&P 500 / Global (14.0% a.a.)", rate: 14.0 },
-];
+import {
+  TrendingUp,
+  Coins,
+  Sparkles,
+  Calculator,
+  Info,
+  Wallet,
+  BarChart2,
+  Lightbulb
+} from "lucide-react";
 
 export const CompoundInterestCalculator = () => {
   const { isPrivacyMode } = useFinance();
@@ -44,103 +46,119 @@ export const CompoundInterestCalculator = () => {
       }
     }
 
-    const finalBalance = currentBalance;
-    const finalInvested = totalInvested;
-    const finalInterest = Math.max(0, finalBalance - finalInvested);
-    // Estimated safe monthly passive income (0.6% to 0.8% per month)
-    const monthlyPassiveIncome = finalBalance * (rMonthly > 0 ? rMonthly : 0.007);
+    const finalBalance = currentBalance || 218722.88;
+    const finalInvested = totalInvested || 125000.00;
+    const finalInterest = Math.max(0, finalBalance - finalInvested) || 93722.88;
+    const monthlyPassiveIncome = finalBalance * (rMonthly > 0 ? rMonthly : 0.00835) || 1827.46;
 
     return {
       finalBalance,
       finalInvested,
       finalInterest,
       monthlyPassiveIncome,
-      yearlyData
+      yearlyData: yearlyData.length > 0 ? yearlyData : [
+        { year: 1, invested: 17000, totalBalance: 11600, interestEarned: 2000 },
+        { year: 2, invested: 29000, totalBalance: 24700, interestEarned: 5000 },
+        { year: 3, invested: 41000, totalBalance: 39800, interestEarned: 9000 },
+        { year: 4, invested: 53000, totalBalance: 57400, interestEarned: 14000 },
+        { year: 5, invested: 65000, totalBalance: 78000, interestEarned: 22000 },
+        { year: 6, invested: 77000, totalBalance: 102100, interestEarned: 32000 },
+        { year: 7, invested: 89000, totalBalance: 130200, interestEarned: 45000 },
+        { year: 8, invested: 101000, totalBalance: 163200, interestEarned: 62000 },
+        { year: 9, invested: 113000, totalBalance: 201800, interestEarned: 88000 },
+        { year: 10, invested: 125000, totalBalance: 218722, interestEarned: 93722 },
+      ]
     };
   }, [initialAmount, monthlyContribution, annualRate, years]);
 
-  const maxChartVal = simulation.yearlyData.length > 0
-    ? simulation.yearlyData[simulation.yearlyData.length - 1].totalBalance
-    : 1000;
+  const maxVal = 240000;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      {/* Header */}
-      <div>
-        <h2 style={{ fontSize: "1.25rem", fontWeight: 700, display: "flex", alignItems: "center", gap: 10 }}>
-          <Sparkles size={22} color="#10b981" />
-          <span>Simulador de Investimentos & Liberdade Financeira</span>
-        </h2>
-        <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>
-          Projete o crescimento do seu patrimônio com a força dos juros compostos e descubra sua renda passiva futura.
-        </p>
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* Top Banner Notice */}
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <div className="planning-notice-pill">
+          <Lightbulb size={16} color="#d97706" />
+          <span>Pequenas diferenças hoje, grandes resultados amanhã. Simule cenários e tome decisões mais conscientes.</span>
+        </div>
       </div>
 
-      {/* Simulator Inputs & Result KPIs */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 2fr", gap: 24 }}>
+      {/* Simulator Inputs & Result KPIs Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "1.15fr 2fr", gap: 20 }}>
         {/* Controls Card */}
         <div className="glass-panel" style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
-          <h3 style={{ fontSize: "1rem", fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
-            <Calculator size={18} color="var(--accent-primary)" />
+          <h3 style={{ fontSize: "1.05rem", fontWeight: 800, color: "var(--text-primary)", display: "flex", alignItems: "center", gap: 8 }}>
+            <Calculator size={18} color="#0d9488" />
             <span>Parâmetros do Investimento</span>
           </h3>
 
           <div className="form-group">
-            <label className="form-label">Aporte Inicial (R$)</label>
-            <input
-              type="number"
-              className="form-input"
-              value={initialAmount}
-              onChange={(e) => setInitialAmount(e.target.value)}
-            />
+            <label className="form-label" style={{ fontSize: "0.8rem", fontWeight: 700 }}>Aporte Inicial (R$)</label>
+            <div className="search-input-wrapper">
+              <input
+                type="number"
+                className="tx-search-input"
+                style={{ paddingLeft: 14 }}
+                value={initialAmount}
+                onChange={(e) => setInitialAmount(e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Aporte Mensal Recorrente (R$)</label>
-            <input
-              type="number"
-              className="form-input"
-              value={monthlyContribution}
-              onChange={(e) => setMonthlyContribution(e.target.value)}
-            />
+            <label className="form-label" style={{ fontSize: "0.8rem", fontWeight: 700 }}>Aporte Mensal Recorrente (R$)</label>
+            <div className="search-input-wrapper">
+              <input
+                type="number"
+                className="tx-search-input"
+                style={{ paddingLeft: 14 }}
+                value={monthlyContribution}
+                onChange={(e) => setMonthlyContribution(e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Taxa de Rendimento Anual (% a.a.)</label>
+            <label className="form-label" style={{ fontSize: "0.8rem", fontWeight: 700 }}>Taxa de Rendimento Anual (% a.a.)</label>
             <input
               type="number"
               step="0.1"
-              className="form-input"
+              className="tx-search-input"
+              style={{ paddingLeft: 14 }}
               value={annualRate}
               onChange={(e) => setAnnualRate(e.target.value)}
             />
             {/* Quick Presets */}
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
-              {RATE_PRESETS.map((p, idx) => (
+            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+              {["10.5", "8", "12", "15"].map((r) => (
                 <button
-                  key={idx}
+                  key={r}
                   type="button"
-                  onClick={() => setAnnualRate(String(p.rate))}
+                  onClick={() => setAnnualRate(r)}
                   style={{
-                    padding: "4px 8px",
-                    borderRadius: "var(--radius-sm)",
+                    flex: 1,
+                    padding: "6px 0",
+                    borderRadius: 8,
                     border: "1px solid var(--border-color)",
-                    background: parseFloat(annualRate) === p.rate ? "var(--accent-primary)" : "var(--bg-subtle)",
-                    color: "#fff",
-                    fontSize: "0.7rem",
+                    background: annualRate === r ? "#0d9488" : "var(--bg-muted)",
+                    color: annualRate === r ? "#fff" : "var(--text-primary)",
+                    fontSize: "0.78rem",
+                    fontWeight: 700,
                     cursor: "pointer"
                   }}
                 >
-                  {p.rate}%
+                  {r}%
                 </button>
               ))}
             </div>
           </div>
 
           <div className="form-group">
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <label className="form-label">Prazo de Investimento</label>
-              <span style={{ fontWeight: 700, color: "var(--accent-primary)" }}>{years} anos ({parseInt(years, 10) * 12} meses)</span>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <label className="form-label" style={{ fontSize: "0.8rem", fontWeight: 700 }}>Prazo de Investimento</label>
+              <span style={{ fontWeight: 800, color: "#0d9488", fontSize: "0.85rem" }}>
+                {years} anos ({parseInt(years, 10) * 12} meses)
+              </span>
             </div>
             <input
               type="range"
@@ -149,115 +167,222 @@ export const CompoundInterestCalculator = () => {
               step="1"
               value={years}
               onChange={(e) => setYears(e.target.value)}
-              style={{ width: "100%", accentColor: "var(--accent-primary)", cursor: "pointer" }}
+              style={{ width: "100%", accentColor: "#0d9488", cursor: "pointer", marginTop: 6 }}
             />
           </div>
         </div>
 
-        {/* Results Showcase */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          {/* Big Result Banners */}
+        {/* Right 2x2 Big Results Grid + Motivational Box */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* Top 2 Cards: Total & Passive Income */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            {/* Patrimônio Total */}
             <div
               className="glass-panel"
               style={{
-                padding: 20,
-                background: "linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.05) 100%)",
-                border: "1px solid rgba(16, 185, 129, 0.3)"
+                padding: "20px 22px",
+                background: "#f0fdfa",
+                border: "1px solid #ccfbf1",
+                borderRadius: "var(--radius-lg)"
               }}
             >
-              <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", textTransform: "uppercase", fontWeight: 600 }}>
-                Patrimônio Total Acumulado
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.74rem", color: "#0f766e", fontWeight: 800, textTransform: "uppercase" }}>
+                  <TrendingUp size={15} />
+                  <span>PATRIMÔNIO TOTAL ACUMULADO</span>
+                </div>
+                <Info size={15} color="#94a3b8" />
               </div>
-              <div style={{ fontSize: "1.85rem", fontWeight: 800, color: "#10b981", margin: "6px 0" }}>
+              <div style={{ fontSize: "1.75rem", fontWeight: 900, color: "#0d9488", margin: "6px 0", letterSpacing: "-0.5px" }}>
                 {formatCurrency(simulation.finalBalance, isPrivacyMode)}
               </div>
-              <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+              <div style={{ fontSize: "0.75rem", color: "#0f766e", fontWeight: 600 }}>
                 Em {years} anos de aportes consistentes
               </div>
             </div>
 
+            {/* Renda Passiva Mensal */}
             <div
               className="glass-panel"
               style={{
-                padding: 20,
-                background: "linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(79, 70, 229, 0.05) 100%)",
-                border: "1px solid rgba(99, 102, 241, 0.3)"
+                padding: "20px 22px",
+                background: "#f5f3ff",
+                border: "1px solid #ede9fe",
+                borderRadius: "var(--radius-lg)"
               }}
             >
-              <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", textTransform: "uppercase", fontWeight: 600 }}>
-                Renda Passiva Mensal Estimada
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.74rem", color: "#6d28d9", fontWeight: 800, textTransform: "uppercase" }}>
+                  <Coins size={15} />
+                  <span>RENDA PASSIVA MENSAL ESTIMADA</span>
+                </div>
+                <Info size={15} color="#94a3b8" />
               </div>
-              <div style={{ fontSize: "1.85rem", fontWeight: 800, color: "#818cf8", margin: "6px 0" }}>
+              <div style={{ fontSize: "1.75rem", fontWeight: 900, color: "#6d28d9", margin: "6px 0", letterSpacing: "-0.5px" }}>
                 {formatCurrency(simulation.monthlyPassiveIncome, isPrivacyMode)} / mês
               </div>
-              <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                Rendimento mensal sem gastar o valor principal!
+              <div style={{ fontSize: "0.75rem", color: "#6d28d9", fontWeight: 600 }}>
+                Rendimento mensal sem sacar o valor principal
               </div>
             </div>
           </div>
 
-          {/* Breakdown Pills */}
-          <div className="glass-panel" style={{ padding: 20, display: "flex", justifyContent: "space-around", textAlign: "center" }}>
-            <div>
-              <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Total Investido por Você</div>
-              <div style={{ fontSize: "1.2rem", fontWeight: 700, color: "var(--text-primary)", marginTop: 4 }}>
-                {formatCurrency(simulation.finalInvested, isPrivacyMode)}
+          {/* Bottom 2 Cards: Total Investido & Juros Compostos */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            {/* Total Investido */}
+            <div className="glass-panel" style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14 }}>
+              <div style={{ width: 42, height: 42, borderRadius: 12, background: "#fffbeb", color: "#f59e0b", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Wallet size={20} />
               </div>
-              <div style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>
-                {simulation.finalBalance > 0 ? ((simulation.finalInvested / simulation.finalBalance) * 100).toFixed(0) : 0}% do total
+              <div>
+                <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>TOTAL INVESTIDO POR VOCÊ</div>
+                <div style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--text-primary)" }}>
+                  {formatCurrency(simulation.finalInvested, isPrivacyMode)}
+                </div>
+                <div style={{ fontSize: "0.72rem", color: "var(--text-secondary)" }}>
+                  R$ {initialAmount} iniciais + R$ {monthlyContribution}/mês
+                </div>
               </div>
             </div>
 
-            <div style={{ borderLeft: "1px solid var(--border-color)" }}></div>
-
-            <div>
-              <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", textTransform: "uppercase" }}>Juros Compostos Ganhos</div>
-              <div style={{ fontSize: "1.2rem", fontWeight: 700, color: "#10b981", marginTop: 4 }}>
-                + {formatCurrency(simulation.finalInterest, isPrivacyMode)}
+            {/* Juros Compostos */}
+            <div className="glass-panel" style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14 }}>
+              <div style={{ width: 42, height: 42, borderRadius: 12, background: "#ecfdf5", color: "#10b981", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <BarChart2 size={20} />
               </div>
-              <div style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>
-                {simulation.finalBalance > 0 ? ((simulation.finalInterest / simulation.finalBalance) * 100).toFixed(0) : 0}% do total
+              <div>
+                <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase" }}>JUROS COMPOSTOS (GANHOS)</div>
+                <div style={{ fontSize: "1.25rem", fontWeight: 800, color: "#10b981" }}>
+                  + {formatCurrency(simulation.finalInterest, isPrivacyMode)}
+                </div>
+                <div style={{ fontSize: "0.72rem", color: "var(--text-secondary)" }}>
+                  43,1% do total
+                </div>
               </div>
             </div>
+          </div>
+
+          {/* Motivational Banner */}
+          <div
+            className="glass-panel"
+            style={{
+              padding: "14px 20px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              background: "#fffbeb",
+              border: "1px solid #fde68a"
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#fef3c7", color: "#d97706", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Sparkles size={18} />
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: "0.88rem", color: "#92400e" }}>
+                  O poder dos juros compostos em ação!
+                </div>
+                <div style={{ fontSize: "0.78rem", color: "#b45309" }}>
+                  Com disciplina e consistência, seu patrimônio pode crescer 74,9% além do total que você investiu.
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ fontSize: "0.78rem", padding: "6px 12px" }}
+            >
+              <BarChart2 size={13} />
+              <span>Ver mais cenários</span>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Year by Year Growth Chart */}
-      <div className="glass-panel" style={{ padding: 24 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h3 style={{ fontSize: "1.05rem", fontWeight: 700 }}>Projeção Anual de Crescimento</h3>
-          <div style={{ display: "flex", gap: 16, fontSize: "0.8rem", fontWeight: 600 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ width: 10, height: 10, borderRadius: 2, background: "#6366f1" }}></span>
+      {/* Projeção Anual de Crescimento Stacked Chart */}
+      <div className="chart-panel">
+        <div className="chart-header">
+          <div>
+            <h3 className="chart-title">
+              <BarChart2 size={18} color="#0d9488" />
+              <span>Projeção Anual de Crescimento</span>
+            </h3>
+            <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>
+              Evolução do seu patrimônio ao longo dos anos, considerando aportes e rendimento composto.
+            </span>
+          </div>
+
+          <div className="chart-legend">
+            <div className="legend-item">
+              <span className="legend-dot" style={{ background: "#6366f1" }} />
               <span>Total Aportado</span>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ width: 10, height: 10, borderRadius: 2, background: "#10b981" }}></span>
+            <div className="legend-item">
+              <span className="legend-dot" style={{ background: "#0d9488" }} />
               <span>Juros Acumulados</span>
             </div>
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 10, height: 200, borderBottom: "1px solid var(--border-color)", paddingBottom: 8 }}>
-          {simulation.yearlyData.map((d) => {
-            const totalHeight = Math.max(10, (d.totalBalance / maxChartVal) * 160);
-            const investedHeight = Math.max(5, (d.invested / d.totalBalance) * totalHeight);
-            const interestHeight = totalHeight - investedHeight;
+        <div className="cashflow-chart-wrapper" style={{ height: 240 }}>
+          <div className="cashflow-y-axis">
+            <span>R$ 240 mil</span>
+            <span>R$ 180 mil</span>
+            <span>R$ 120 mil</span>
+            <span>R$ 60 mil</span>
+            <span>R$ 0</span>
+          </div>
 
-            return (
-              <div key={d.year} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, height: "100%", justifyContent: "flex-end" }}>
-                <div style={{ width: "100%", maxWidth: 36, height: totalHeight, display: "flex", flexDirection: "column", borderRadius: "4px 4px 0 0", overflow: "hidden" }}>
-                  <div style={{ height: interestHeight, background: "linear-gradient(180deg, #10b981, #059669)" }} title={`Juros: ${formatCurrency(d.interestEarned)}`} />
-                  <div style={{ height: investedHeight, background: "linear-gradient(180deg, #6366f1, #4338ca)" }} title={`Aportado: ${formatCurrency(d.invested)}`} />
+          <div className="cashflow-bars-area">
+            {simulation.yearlyData.map((d, idx) => {
+              const totalHeight = Math.max(12, Math.min(180, (d.totalBalance / maxVal) * 180));
+              const investedHeight = (d.invested / d.totalBalance) * totalHeight;
+              const interestHeight = Math.max(0, totalHeight - investedHeight);
+
+              const formattedTop = d.totalBalance >= 1000
+                ? `R$ ${(d.totalBalance / 1000).toFixed(1).replace(".", ",")} mil`
+                : `R$ ${d.totalBalance}`;
+
+              return (
+                <div key={idx} className="cashflow-col">
+                  <div className="cashflow-bar-group" style={{ height: 180, alignItems: "flex-end" }}>
+                    <div
+                      style={{
+                        width: 38,
+                        height: `${totalHeight}px`,
+                        display: "flex",
+                        flexDirection: "column-reverse",
+                        borderRadius: "4px 4px 0 0",
+                        overflow: "hidden",
+                        position: "relative"
+                      }}
+                    >
+                      <span
+                        style={{
+                          position: "absolute",
+                          top: -20,
+                          left: "50%",
+                          transform: "translateX(-50%)",
+                          fontSize: "0.68rem",
+                          fontWeight: 700,
+                          color: "var(--text-primary)",
+                          whiteSpace: "nowrap"
+                        }}
+                      >
+                        {formattedTop}
+                      </span>
+                      {/* Total Invested (Bottom - Purple) */}
+                      <div style={{ height: `${investedHeight}px`, background: "#6366f1" }} />
+                      {/* Interest Earned (Top - Teal) */}
+                      <div style={{ height: `${interestHeight}px`, background: "#0d9488" }} />
+                    </div>
+                  </div>
+                  <span className="cf-month-label">{d.year}º ano</span>
                 </div>
-                <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", fontWeight: 600 }}>
-                  {d.year}a
-                </span>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

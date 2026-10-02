@@ -14,16 +14,25 @@ import { AuthView } from "./components/auth/AuthView";
 
 // Views
 import { DashboardView } from "./components/dashboard/DashboardView";
+import { AccountsHubView } from "./components/accounts/AccountsHubView";
+import { BalanceForecastView } from "./components/forecast/BalanceForecastView";
+import { DebtsView } from "./components/debts/DebtsView";
+import { MonthlyReportView } from "./components/reports/MonthlyReportView";
+import { SharedSpaceView } from "./components/shared/SharedSpaceView";
 import { CardsView } from "./components/cards/CardsView";
 import { TransactionsView } from "./components/transactions/TransactionsView";
+import { FinancialCalendarView } from "./components/calendar/FinancialCalendarView";
 import { PlanningView } from "./components/planning/PlanningView";
+import { FinancialInsightsView } from "./components/insights/FinancialInsightsView";
 import { SubscriptionsView } from "./components/subscriptions/SubscriptionsView";
 import { CompoundInterestCalculator } from "./components/calculator/CompoundInterestCalculator";
 import { GoalsView } from "./components/goals/GoalsView";
+import { ProfileView } from "./components/profile/ProfileView";
 
 const MainContent = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isGlobalAddTxOpen, setIsGlobalAddTxOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [cardFilterFromCardsView, setCardFilterFromCardsView] = useState(null);
@@ -32,13 +41,21 @@ const MainContent = () => {
   const { isAuthenticated, loading } = useAuth();
 
   const tabTitles = {
-    dashboard: "Dashboard Financeiro",
+    dashboard: "Olá, Guilherme!",
+    accounts: "Central de Contas",
+    forecast: "Previsão de Saldo",
+    debts: "Dívidas e Parcelas",
+    reports: "Relatório Mensal",
+    shared: "Espaço compartilhado",
     cards: "Gestão de Cartões & Faturas",
-    transactions: "Movimentações & Transações",
+    transactions: "Movimentações & Extrato",
+    calendar: "Calendário Financeiro",
     planning: "Planejamento Orçamentário 50/30/20",
+    insights: "Insights Financeiros",
     subscriptions: "Assinaturas & Gastos Recorrentes",
+    goals: "Metas & Sonhos Financeiros",
     calculator: "Simulador de Investimentos",
-    goals: "Metas & Sonhos Financeiros"
+    profile: "Meu Perfil"
   };
 
   if (loading) {
@@ -78,41 +95,54 @@ const MainContent = () => {
   const renderActiveView = () => {
     switch (activeTab) {
       case "dashboard":
-        return <DashboardView />;
+        return <DashboardView onNavigateTab={(tab) => setActiveTab(tab)} />;
+      case "accounts":
+        return <AccountsHubView />;
+      case "forecast":
+        return <BalanceForecastView />;
+      case "debts":
+        return <DebtsView />;
+      case "reports":
+        return <MonthlyReportView />;
+      case "shared":
+        return <SharedSpaceView />;
       case "cards":
         return <CardsView onSelectCardFilter={handleSelectCardFilter} />;
       case "transactions":
         return <TransactionsView initialCardFilter={cardFilterFromCardsView} />;
+      case "calendar":
+        return <FinancialCalendarView />;
       case "planning":
         return <PlanningView />;
+      case "insights":
+        return <FinancialInsightsView />;
       case "subscriptions":
         return <SubscriptionsView />;
-      case "calculator":
-        return <CompoundInterestCalculator />;
       case "goals":
         return <GoalsView />;
+      case "calculator":
+        return <CompoundInterestCalculator />;
+      case "profile":
+        return <ProfileView onNavigateHome={() => setActiveTab("dashboard")} />;
       default:
-        return <DashboardView />;
+        return <DashboardView onNavigateTab={(tab) => setActiveTab(tab)} />;
     }
   };
 
   return (
-    <div className={`app-layout ${isMobileView ? "mobile-view-mode" : "desktop-view-mode"} view-preference-${viewMode}`}>
+    <div className={`app-layout ${isMobileView ? "mobile-view-mode" : "desktop-view-mode"} ${isSidebarCollapsed && !isMobileView ? "sidebar-is-collapsed" : ""} view-preference-${viewMode}`}>
       {/* Desktop Sidebar (Only in Desktop Mode) */}
       {!isMobileView && (
         <Sidebar
           activeTab={activeTab}
-          setActiveTab={(tab) => {
-            if (tab !== "transactions") setCardFilterFromCardsView(null);
-            setActiveTab(tab);
-          }}
-          isOpen={false}
-          setIsOpen={() => {}}
+          setActiveTab={setActiveTab}
+          isCollapsed={isSidebarCollapsed}
+          setIsCollapsed={setIsSidebarCollapsed}
         />
       )}
 
-      {/* Main Area */}
-      <div className={`app-main-content ${isMobileView ? "has-mobile-nav" : ""}`}>
+      {/* Main Content Area */}
+      <div className="app-main-content main-content-wrapper">
         <Header
           activeTabTitle={tabTitles[activeTab]}
           onOpenAddTransaction={() => setIsGlobalAddTxOpen(true)}
@@ -120,35 +150,31 @@ const MainContent = () => {
           onToggleMobileSidebar={() => setIsMobileDrawerOpen(true)}
         />
 
-        <main className="page-body">
+        <main className="page-body main-content">
           {renderActiveView()}
         </main>
       </div>
+
+      {/* Mobile Drawer (Only for responsive viewports) */}
+      {isMobileView && (
+        <MobileMenuDrawer
+          isOpen={isMobileDrawerOpen}
+          onClose={() => setIsMobileDrawerOpen(false)}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          onOpenCategoryModal={() => setIsCategoryModalOpen(true)}
+        />
+      )}
 
       {/* Mobile Bottom Navigation Bar */}
       {isMobileView && (
         <MobileNavBar
           activeTab={activeTab}
-          setActiveTab={(tab) => {
-            if (tab !== "transactions") setCardFilterFromCardsView(null);
-            setActiveTab(tab);
-          }}
+          setActiveTab={setActiveTab}
           onOpenAddTransaction={() => setIsGlobalAddTxOpen(true)}
-          onOpenMobileMenu={() => setIsMobileDrawerOpen(true)}
+          onOpenDrawer={() => setIsMobileDrawerOpen(true)}
         />
       )}
-
-      {/* Mobile Menu Bottom Sheet Drawer */}
-      <MobileMenuDrawer
-        isOpen={isMobileDrawerOpen}
-        onClose={() => setIsMobileDrawerOpen(false)}
-        activeTab={activeTab}
-        setActiveTab={(tab) => {
-          if (tab !== "transactions") setCardFilterFromCardsView(null);
-          setActiveTab(tab);
-        }}
-        onOpenCategoryModal={() => setIsCategoryModalOpen(true)}
-      />
 
       {/* Global Add Transaction Modal */}
       <AddTransactionModal
@@ -156,19 +182,24 @@ const MainContent = () => {
         onClose={() => setIsGlobalAddTxOpen(false)}
       />
 
-      {/* Categories Manager Modal */}
+      {/* Global Category Management Modal */}
       <CategoriesModal
         isOpen={isCategoryModalOpen}
         onClose={() => setIsCategoryModalOpen(false)}
       />
 
-      {/* Global Toast Notification */}
-      {toast && <Toast message={toast.message} type={toast.type} />}
+      {/* Global Toast Feedback */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+        />
+      )}
     </div>
   );
 };
 
-export function App() {
+export const App = () => {
   return (
     <ThemeProvider>
       <DeviceProvider>
@@ -180,6 +211,6 @@ export function App() {
       </DeviceProvider>
     </ThemeProvider>
   );
-}
+};
 
 export default App;

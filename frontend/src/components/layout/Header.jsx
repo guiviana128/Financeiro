@@ -8,19 +8,30 @@ import {
   Eye,
   EyeOff,
   Tag,
-  ShieldCheck,
-  Zap,
+  Search,
+  Bell,
+  HelpCircle,
   User as UserIcon,
   LogOut,
-  ChevronDown,
-  Settings
+  ChevronDown
 } from "lucide-react";
 import { useFinance } from "../../context/FinanceContext";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
+import { useDevice } from "../../context/DeviceContext";
 import { MonthPickerDropdown } from "../common/MonthPickerDropdown";
-import { DeviceModeBadge } from "../common/DeviceModeBadge";
 import { UserProfileModal } from "../auth/UserProfileModal";
+import { GlobalSearchModal } from "../common/GlobalSearchModal";
+
+const TAB_SUBTITLES = {
+  "Dashboard Financeiro": "Visão geral da sua vida financeira",
+  "Gestão de Cartões & Faturas": "Acompanhe seus cartões, consulte faturas e gerencie seus limites de forma inteligente.",
+  "Movimentações & Transações": "Listagem detalhada de gastos, receitas e compras parceladas no cartão.",
+  "Planejamento Orçamentário 50/30/20": "Organize suas finanças equilibrando necessidades, estilo de vida e investimentos.",
+  "Assinaturas & Gastos Recorrentes": "Monitore seus contratos recorrentes, datas de cobrança e custos fixos.",
+  "Simulador de Investimentos": "Projeção de juros compostos e evolução do seu patrimônio.",
+  "Metas & Sonhos Financeiros": "Acompanhe suas economias e conquistas planejadas."
+};
 
 export const Header = ({
   activeTabTitle,
@@ -28,12 +39,30 @@ export const Header = ({
   onOpenCategoryModal,
   onToggleMobileSidebar
 }) => {
-  const { selectedMonth, setSelectedMonth, isPrivacyMode, togglePrivacyMode, backendConnected } = useFinance();
+  const { selectedMonth, setSelectedMonth, isPrivacyMode, togglePrivacyMode } = useFinance();
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
+  const { viewMode, setViewMode } = useDevice();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const menuRef = useRef(null);
+
+  // Global Ctrl+K / Cmd+K listener
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        setIsSearchOpen(prev => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const subtitle = TAB_SUBTITLES[activeTabTitle] || "Controle e gestão financeira completa";
+  const userName = user?.name || "Guilherme Viana";
+  const userInitial = userName.charAt(0).toUpperCase();
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -51,147 +80,78 @@ export const Header = ({
       <header className="app-header">
         <div className="header-left">
           <button
-            className="icon-btn mobile-menu-btn"
+            className="header-circle-btn mobile-menu-btn"
             onClick={onToggleMobileSidebar}
             aria-label="Abrir Menu"
           >
             <Menu size={20} />
           </button>
-          <div>
+          <div className="header-title-wrapper">
             <h1 className="page-title">{activeTabTitle}</h1>
+            <span className="page-subtitle">{subtitle}</span>
           </div>
         </div>
 
         <div className="header-right">
-          {/* Status Indicator */}
-          <span
-            className="badge"
-            style={{
-              background: backendConnected ? "rgba(16, 185, 129, 0.1)" : "rgba(99, 102, 241, 0.1)",
-              color: backendConnected ? "#10b981" : "#818cf8",
-              border: `1px solid ${backendConnected ? "rgba(16, 185, 129, 0.25)" : "rgba(99, 102, 241, 0.25)"}`,
-              fontSize: "0.75rem",
-              display: "none",
-              alignItems: "center",
-              gap: 6
-            }}
-            title={backendConnected ? "Conectado ao Backend FastAPI" : "Modo Local Ativo"}
-          >
-            {backendConnected ? <ShieldCheck size={14} /> : <Zap size={14} />}
-            <span>{backendConnected ? "API Conectada" : "Modo Local"}</span>
-          </span>
-
-          {/* Device Mode Identifier & Switcher */}
-          <DeviceModeBadge />
-
-          {/* Custom Month Picker */}
+          {/* Custom Month Picker Capsule matching screenshot */}
           <MonthPickerDropdown
             selectedMonth={selectedMonth}
             onSelectMonth={setSelectedMonth}
           />
 
-          {/* Privacy Mode Toggle */}
+          {/* Search Button (Circle with search icon) */}
           <button
-            className="icon-btn header-desktop-only"
-            onClick={togglePrivacyMode}
-            title={isPrivacyMode ? "Mostrar valores" : "Esconder valores (Modo Privacidade)"}
-            aria-label="Modo Privacidade"
+            type="button"
+            className="header-circle-btn"
+            onClick={() => setIsSearchOpen(true)}
+            title="Buscar transações, categorias... (Ctrl+K)"
           >
-            {isPrivacyMode ? <EyeOff size={18} color="#f43f5e" /> : <Eye size={18} />}
+            <Search size={17} />
           </button>
 
-          {/* Manage Categories Button */}
-          {onOpenCategoryModal && (
-            <button
-              className="icon-btn header-desktop-only"
-              onClick={onOpenCategoryModal}
-              title="Gerenciar Categorias"
-              aria-label="Gerenciar Categorias"
-            >
-              <Tag size={18} />
-            </button>
-          )}
-
-          {/* Theme Toggle */}
+          {/* Notification Bell with alert dot */}
           <button
-            className="icon-btn header-desktop-only"
-            onClick={toggleTheme}
-            title={theme === "dark" ? "Mudar para Modo Claro" : "Mudar para Modo Escuro"}
-            aria-label="Alternar tema"
+            type="button"
+            className="header-circle-btn"
+            title="Notificações & Alertas"
           >
-            {theme === "dark" ? <Sun size={18} color="#f59e0b" /> : <Moon size={18} color="#6366f1" />}
+            <Bell size={17} />
+            <span className="header-badge-dot" />
           </button>
 
-          {/* User Profile Pill Dropdown */}
-          {user && (
-            <div className="user-profile-menu-container" ref={menuRef}>
-              <button
-                type="button"
-                className="user-profile-pill-btn"
-                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                title={`Usuário: ${user.name} (${user.email})`}
-              >
-                <div className="user-avatar-circle">
-                  {user.name ? user.name.charAt(0).toUpperCase() : "U"}
-                </div>
-                <span className="user-profile-name">{user.name.split(" ")[0]}</span>
-                <ChevronDown size={14} color="#94a3b8" />
-              </button>
-
-              {isUserMenuOpen && (
-                <div className="user-dropdown-card glass-panel">
-                  <div className="user-dropdown-info">
-                    <div className="user-avatar-circle" style={{ width: 34, height: 34 }}>
-                      {user.name ? user.name.charAt(0).toUpperCase() : "U"}
-                    </div>
-                    <div className="user-dropdown-details">
-                      <span className="user-dropdown-name">{user.name}</span>
-                      <span className="user-dropdown-email">{user.email}</span>
-                    </div>
-                  </div>
-
-                  <div className="user-dropdown-items">
-                    <button
-                      type="button"
-                      className="user-dropdown-item"
-                      onClick={() => {
-                        setIsUserMenuOpen(false);
-                        setIsProfileModalOpen(true);
-                      }}
-                    >
-                      <UserIcon size={16} />
-                      <span>Meu Perfil & Senha</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      className="user-dropdown-item danger"
-                      onClick={() => {
-                        setIsUserMenuOpen(false);
-                        logout();
-                      }}
-                    >
-                      <LogOut size={16} />
-                      <span>Sair da Conta</span>
-                    </button>
-                  </div>
-                </div>
-              )}
+          {/* User Profile Capsule matching Reference Images */}
+          <div
+            className="header-user-capsule"
+            onClick={() => setIsProfileModalOpen(true)}
+            title="Ver meu perfil e configurações"
+          >
+            <div className="user-avatar-circle" style={{ background: "#0284c7", width: 32, height: 32, fontSize: "0.82rem" }}>
+              {userInitial}
             </div>
-          )}
+            <div className="header-user-info-text">
+              <span className="header-user-name">{userName}</span>
+              <span className="header-user-plan">Plano Pro</span>
+            </div>
+          </div>
 
-          {/* Quick Add Button (Desktop Only) */}
-          <button className="btn btn-primary header-desktop-btn" onClick={onOpenAddTransaction}>
+          {/* Primary CTA Button: + Nova Transação */}
+          <button className="btn btn-primary" onClick={onOpenAddTransaction}>
             <Plus size={18} />
             <span>Nova Transação</span>
           </button>
         </div>
       </header>
 
-      {/* User Profile Edit Modal */}
+      {/* User Profile Modal */}
       <UserProfileModal
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
+      />
+
+      {/* Global Search Command Palette */}
+      <GlobalSearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
       />
     </>
   );
